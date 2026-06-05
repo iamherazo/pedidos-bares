@@ -179,10 +179,10 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
 <nav>
   <div class="nav-brand">🍸 <span>Bar</span>Inventory</div>
-  <div class="nav-tab active" onclick="showView('pedido-noche')">📋 Pedido Noche</div>
-  <div class="nav-tab" onclick="showView('pedido-manana')">🌅 Recogida Mañana</div>
-  <div class="nav-tab" onclick="showView('historial')">📊 Historial</div>
-  <div class="nav-tab" onclick="showView('admin')">⚙️ Administrar</div>
+  <div class="nav-tab active" onclick="showView('pedido-noche',this)">📋 Pedido Noche</div>
+  <div class="nav-tab" onclick="showView('pedido-manana',this)">🌅 Recogida Mañana</div>
+  <div class="nav-tab" onclick="showView('historial',this)">📊 Historial</div>
+  <div class="nav-tab" onclick="showView('admin',this)">⚙️ Administrar</div>
 </nav>
 
 <!-- ============ PEDIDO NOCHE ============ -->
@@ -415,9 +415,16 @@ let currentPedidoId = null;
 
 // ─── Init ──────────────────────────────────────────────────────
 async function init() {
-  await Promise.all([loadPersonal(), loadFamilias(), loadProductos(), loadRegimenes()]);
-  renderPedidoNoche();
-  populateCamareroSelects();
+  const c = document.getElementById('pn-productos-container');
+  c.innerHTML = '<div class="loading"><div class="spinner"></div> Cargando...</div>';
+  try {
+    await Promise.all([loadPersonal(), loadFamilias(), loadProductos(), loadRegimenes()]);
+    renderPedidoNoche();
+    populateCamareroSelects();
+  } catch(e) {
+    c.innerHTML = '<div class="alert alert-warn">⚠️ Error al conectar con el servidor. Comprueba tu conexión e intenta recargar la página.</div>';
+    console.error('Init error:', e);
+  }
 }
 
 async function loadPersonal() {
@@ -434,11 +441,11 @@ async function loadRegimenes() {
 }
 
 // ─── Navigation ────────────────────────────────────────────────
-function showView(name) {
+function showView(name, el) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if (el) el.classList.add('active');
   if (name === 'pedido-manana') loadPedidosPendientes();
   if (name === 'historial') loadHistorial();
   if (name === 'admin') loadAdmin();
@@ -538,7 +545,9 @@ function clearPedido() {
   updateBadges();
 }
 
+let guardandoPedido = false;
 async function guardarPedido() {
+  if (guardandoPedido) return;
   const camarero = document.getElementById('pn-camarero').value;
   const bar = document.getElementById('pn-bar').value;
   if (!camarero) { alert('Selecciona un camarero'); return; }
@@ -550,6 +559,9 @@ async function guardarPedido() {
 
   if (!lineas.length) { alert('Añade al menos un producto con cantidad'); return; }
 
+  guardandoPedido = true;
+  const btn = document.querySelector('[onclick="guardarPedido()"]');
+  if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
   try {
     const [ped] = await db('pedidos', 'POST', { bar, camarero_noche_id: camarero });
     await db('pedido_lineas', 'POST', lineas.map(l => ({ ...l, pedido_id: ped.id })));
@@ -557,7 +569,12 @@ async function guardarPedido() {
     clearPedido();
     document.getElementById('pn-camarero').value = '';
     document.getElementById('pn-bar').value = 'Bar Piscina';
-  } catch(e) { alert('Error: ' + e.message); }
+  } catch(e) {
+    alert('❌ Error al guardar el pedido. Comprueba tu conexión e inténtalo de nuevo.');
+  } finally {
+    guardandoPedido = false;
+    if (btn) { btn.textContent = '✓ Guardar pedido'; btn.disabled = false; }
+  }
 }
 
 // ─── PEDIDO MAÑANA ─────────────────────────────────────────────
@@ -669,9 +686,14 @@ function checkDiff(lineaId, cantPedida) {
   else { row.classList.remove('diff'); row.classList.add('ok'); mw.style.display='none'; }
 }
 
+let confirmandoPedido = false;
 async function confirmarPedido() {
+  if (confirmandoPedido) return;
   const camId = document.getElementById('pm-camarero').value;
   if (!camId) { alert('Selecciona el camarero de mañana'); return; }
+  confirmandoPedido = true;
+  const btn = document.querySelector('[onclick="confirmarPedido()"]');
+  if (btn) { btn.textContent = 'Confirmando...'; btn.disabled = true; }
   try {
     for (const l of confLineas) {
       const llevado = parseInt(document.getElementById(`llevado-${l.id}`).value) || 0;
@@ -682,7 +704,12 @@ async function confirmarPedido() {
     closeModal('modal-confirmar-pedido');
     alert('✅ Recogida confirmada');
     loadPedidosPendientes();
-  } catch(e) { alert('Error: ' + e.message); }
+  } catch(e) {
+    alert('❌ Error al confirmar. Inténtalo de nuevo.');
+  } finally {
+    confirmandoPedido = false;
+    if (btn) { btn.textContent = '✓ Confirmar recogida'; btn.disabled = false; }
+  }
 }
 
 // ─── HISTORIAL ─────────────────────────────────────────────────
@@ -699,20 +726,32 @@ function getDateRange() {
   if (p === 'hoy') desde = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   else if (p === 'semana') { const d = new Date(now); d.setDate(d.getDate() - d.getDay()); desde = new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
   else if (p === 'mes') desde = new Date(now.getFullYear(), now.getMonth(), 1);
-  else { desde = new Date(document.getElementById('h-desde').value); hasta = new Date(document.getElementById('h-hasta').value + 'T23:59:59'); }
+  else {
+    const desdeVal = document.getElementById('h-desde').value;
+    const hastaVal = document.getElementById('h-hasta').value;
+    if (!desdeVal || !hastaVal) {
+      desde = new Date(now.getFullYear(), now.getMonth(), 1);
+      hasta = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    } else {
+      desde = new Date(desdeVal);
+      hasta = new Date(hastaVal + 'T23:59:59');
+    }
+  }
   return { desde: desde.toISOString(), hasta: hasta.toISOString() };
 }
 
 async function loadHistorial() {
   const bar = document.getElementById('h-bar').value;
   const { desde, hasta } = getDateRange();
+  document.getElementById('h-lista').innerHTML = '<div class="loading"><div class="spinner"></div> Cargando historial...</div>';
+  document.getElementById('h-sin-stock-alert').innerHTML = '';
   let q = `?created_at=gte.${desde}&created_at=lte.${hasta}&order=created_at.desc`;
   if (bar) q += `&bar=eq.${encodeURIComponent(bar)}`;
   try {
     const pedidos = await db('pedidos', 'GET', null, q);
     renderStats(pedidos);
     await renderHistorialList(pedidos);
-  } catch(e) { document.getElementById('h-lista').innerHTML = `<div class="alert alert-warn">Error: ${e.message}</div>`; }
+  } catch(e) { document.getElementById('h-lista').innerHTML = `<div class="alert alert-warn">⚠️ Error al cargar el historial.</div>`; }
 }
 
 function renderStats(pedidos) {
@@ -888,10 +927,12 @@ function populateFamiliaSelect() {
 async function addPersonal() {
   const n = document.getElementById('new-personal-nombre').value.trim();
   if (!n) { alert('Escribe un nombre'); return; }
-  await db('personal', 'POST', { nombre: n });
-  document.getElementById('new-personal-nombre').value = '';
-  closeModal('modal-add-personal');
-  await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
+  try {
+    await db('personal', 'POST', { nombre: n });
+    document.getElementById('new-personal-nombre').value = '';
+    closeModal('modal-add-personal');
+    await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
+  } catch(e) { alert('❌ Error al añadir el camarero.'); }
 }
 
 async function addProducto() {
@@ -899,37 +940,47 @@ async function addProducto() {
   const fam = document.getElementById('new-prod-familia').value;
   const uni = document.getElementById('new-prod-unidad').value.trim() || 'ud';
   if (!n) { alert('Escribe un nombre'); return; }
-  await db('productos', 'POST', { nombre: n, familia_id: fam || null, unidad: uni });
-  document.getElementById('new-prod-nombre').value = '';
-  closeModal('modal-add-producto');
-  await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
+  try {
+    await db('productos', 'POST', { nombre: n, familia_id: fam || null, unidad: uni });
+    document.getElementById('new-prod-nombre').value = '';
+    closeModal('modal-add-producto');
+    await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al añadir el producto.'); }
 }
 
 async function addFamilia() {
   const n = document.getElementById('new-familia-nombre').value.trim();
   if (!n) { alert('Escribe un nombre'); return; }
-  await db('familias', 'POST', { nombre: n, orden: familias.length + 1 });
-  document.getElementById('new-familia-nombre').value = '';
-  closeModal('modal-add-familia');
-  await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+  try {
+    await db('familias', 'POST', { nombre: n, orden: familias.length + 1 });
+    document.getElementById('new-familia-nombre').value = '';
+    closeModal('modal-add-familia');
+    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al añadir la familia.'); }
 }
 
 async function deletePersonal(id) {
   if (!confirm('¿Eliminar este camarero?')) return;
-  await db('personal', 'PATCH', { activo: false }, `?id=eq.${id}`);
-  await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
+  try {
+    await db('personal', 'PATCH', { activo: false }, `?id=eq.${id}`);
+    await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
+  } catch(e) { alert('❌ Error al eliminar.'); }
 }
 
 async function deleteProducto(id) {
   if (!confirm('¿Eliminar este producto?')) return;
-  await db('productos', 'PATCH', { activo: false }, `?id=eq.${id}`);
-  await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
+  try {
+    await db('productos', 'PATCH', { activo: false }, `?id=eq.${id}`);
+    await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al eliminar.'); }
 }
 
 async function deleteFamilia(id) {
   if (!confirm('¿Eliminar esta familia? Los productos quedarán sin familia.')) return;
-  await db('familias', 'DELETE', null, `?id=eq.${id}`);
-  await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+  try {
+    await db('familias', 'DELETE', null, `?id=eq.${id}`);
+    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al eliminar.'); }
 }
 
 // ─── MODALS ────────────────────────────────────────────────────
