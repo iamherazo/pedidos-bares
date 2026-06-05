@@ -657,14 +657,15 @@ function changeConf(lineaId, delta, cantPedida) {
   const inp = document.getElementById(`llevado-${lineaId}`);
   const v = Math.max(0, (parseInt(inp.value) || 0) + delta);
   inp.value = v;
-  checkDiff(lineaId, cantPedida);
+  checkDiff(lineaId, parseInt(cantPedida));
 }
 
 function checkDiff(lineaId, cantPedida) {
   const llevado = parseInt(document.getElementById(`llevado-${lineaId}`).value) || 0;
+  const pedida = parseInt(cantPedida) || 0;
   const row = document.getElementById(`crow-${lineaId}`);
   const mw = document.getElementById(`motivo-wrap-${lineaId}`);
-  if (llevado < cantPedida) { row.classList.add('diff'); row.classList.remove('ok'); mw.style.display='block'; }
+  if (llevado < pedida) { row.classList.add('diff'); row.classList.remove('ok'); mw.style.display='block'; }
   else { row.classList.remove('diff'); row.classList.add('ok'); mw.style.display='none'; }
 }
 
@@ -674,7 +675,7 @@ async function confirmarPedido() {
   try {
     for (const l of confLineas) {
       const llevado = parseInt(document.getElementById(`llevado-${l.id}`).value) || 0;
-      const motivo = llevado < l.cantidad_pedida ? document.getElementById(`motivo-${l.id}`).value : null;
+      const motivo = llevado < parseInt(l.cantidad_pedida) ? document.getElementById(`motivo-${l.id}`).value : null;
       await db('pedido_lineas', 'PATCH', { cantidad_llevada: llevado, motivo_diferencia: motivo }, `?id=eq.${l.id}`);
     }
     await db('pedidos', 'PATCH', { estado: 'completado', camarero_manana_id: camId, completado_at: new Date().toISOString() }, `?id=eq.${confPedidoId}`);
