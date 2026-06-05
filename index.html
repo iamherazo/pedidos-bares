@@ -281,6 +281,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     <div class="view-tab active" onclick="showAdminTab('personal')">👥 Personal</div>
     <div class="view-tab" onclick="showAdminTab('productos')">📦 Productos</div>
     <div class="view-tab" onclick="showAdminTab('familias')">🏷️ Familias</div>
+    <div class="view-tab" onclick="showAdminTab('regimenes')">📌 Regímenes</div>
   </div>
 
   <!-- PERSONAL -->
@@ -290,6 +291,15 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       <button class="btn-primary btn-sm" onclick="openModal('modal-add-personal')">+ Añadir</button>
     </div>
     <div id="admin-personal-list"><div class="loading"><div class="spinner"></div> Cargando...</div></div>
+  </div>
+
+  <!-- REGIMENES -->
+  <div id="admin-regimenes" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:600;">Regímenes</div>
+      <button class="btn-primary btn-sm" onclick="openEditRegimen(null)">+ Añadir</button>
+    </div>
+    <div id="admin-regimenes-list"><div class="loading"><div class="spinner"></div> Cargando...</div></div>
   </div>
 
   <!-- PRODUCTOS -->
@@ -452,11 +462,11 @@ function showView(name, el) {
 }
 
 function showAdminTab(tab) {
-  ['personal','productos','familias'].forEach(t => {
+  ['personal','productos','familias','regimenes'].forEach(t => {
     document.getElementById(`admin-${t}`).style.display = t === tab ? 'block' : 'none';
   });
   document.querySelectorAll('.view-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['personal','productos','familias'][i] === tab);
+    t.classList.toggle('active', ['personal','productos','familias','regimenes'][i] === tab);
   });
 }
 
@@ -858,6 +868,7 @@ async function loadAdmin() {
   renderPersonalAdmin();
   renderProductosAdmin();
   renderFamiliasAdmin();
+  renderRegimenesAdmin();
   populateFamiliaSelect();
 }
 
@@ -865,8 +876,15 @@ function renderPersonalAdmin() {
   const c = document.getElementById('admin-personal-list');
   if (!personal.length) { c.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><p>No hay personal registrado</p></div>'; return; }
   c.innerHTML = `<div class="card"><table>
-    <thead><tr><th>Nombre</th><th style="width:80px;text-align:right">Acción</th></tr></thead>
-    <tbody>${personal.map(p => `<tr><td>${p.nombre}</td><td style="text-align:right"><button class="btn-danger btn-sm" onclick="deletePersonal('${p.id}')">Eliminar</button></td></tr>`).join('')}</tbody>
+    <thead><tr><th>Nombre</th><th>Cargo</th><th style="width:120px;text-align:right">Acciones</th></tr></thead>
+    <tbody>${personal.map(p => `<tr>
+      <td>${p.nombre}</td>
+      <td style="color:var(--text2);font-size:13px;">${p.cargo||'Camarero'}</td>
+      <td style="text-align:right">
+        <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditPersonal('${p.id}')">✏️</button>
+        <button class="btn-danger btn-sm" onclick="deletePersonal('${p.id}')">✕</button>
+      </td>
+    </tr>`).join('')}</tbody>
   </table></div>`;
 }
 
@@ -893,7 +911,7 @@ function renderProductosAdmin() {
     html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);padding:10px 0 4px;margin-top:8px;">📌 ${regData.nombre}</div>`;
     Object.entries(regData.familias).forEach(([fam, prods]) => {
       html += `<div class="card" style="margin-bottom:8px;"><div class="family-header">${fam}</div><table>
-        <tbody>${prods.map(p => `<tr><td>${p.nombre}</td><td style="color:var(--text3);font-size:13px;">${p.unidad}</td><td style="text-align:right"><button class="btn-danger btn-sm" onclick="deleteProducto('${p.id}')">Eliminar</button></td></tr>`).join('')}
+        <tbody>${prods.map(p => `<tr><td>${p.nombre}</td><td style="color:var(--text3);font-size:13px;">${p.unidad}</td><td style="text-align:right"><button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditProducto('${p.id}')">✏️</button><button class="btn-danger btn-sm" onclick="deleteProducto('${p.id}')">✕</button></td></tr>`).join('')}
         </tbody></table></div>`;
     });
   });
@@ -904,8 +922,18 @@ function renderFamiliasAdmin() {
   const c = document.getElementById('admin-familias-list');
   if (!familias.length) { c.innerHTML = '<div class="empty"><div class="empty-icon">🏷️</div><p>No hay familias</p></div>'; return; }
   c.innerHTML = `<div class="card"><table>
-    <thead><tr><th>Familia</th><th style="width:80px;text-align:right">Acción</th></tr></thead>
-    <tbody>${familias.map(f => `<tr><td>${f.nombre}</td><td style="text-align:right"><button class="btn-danger btn-sm" onclick="deleteFamilia('${f.id}')">Eliminar</button></td></tr>`).join('')}</tbody>
+    <thead><tr><th>Familia</th><th>Régimen</th><th style="width:120px;text-align:right">Acciones</th></tr></thead>
+    <tbody>${familias.map(f => {
+      const reg = regimenes.find(r => r.id === f.regimen_id);
+      return `<tr>
+        <td>${f.nombre}</td>
+        <td style="color:var(--text2);font-size:13px;">${reg?reg.nombre:'—'}</td>
+        <td style="text-align:right">
+          <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditFamilia('${f.id}')">✏️</button>
+          <button class="btn-danger btn-sm" onclick="deleteFamilia('${f.id}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
   </table></div>`;
 }
 
@@ -1046,6 +1074,129 @@ async function confirmarResolver() {
 }
 
 
+
+// ─── EDIT PERSONAL ─────────────────────────────────────────────
+function openEditPersonal(id) {
+  const p = personal.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('edit-personal-id').value = p.id;
+  document.getElementById('edit-personal-nombre').value = p.nombre;
+  document.getElementById('edit-personal-cargo').value = p.cargo || 'Camarero';
+  openModal('modal-edit-personal');
+}
+async function savePersonal() {
+  const id = document.getElementById('edit-personal-id').value;
+  const nombre = document.getElementById('edit-personal-nombre').value.trim();
+  const cargo = document.getElementById('edit-personal-cargo').value;
+  if (!nombre) { alert('Escribe un nombre'); return; }
+  try {
+    await db('personal', 'PATCH', { nombre, cargo }, `?id=eq.${id}`);
+    closeModal('modal-edit-personal');
+    await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
+  } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+}
+
+// ─── EDIT PRODUCTO ──────────────────────────────────────────────
+function openEditProducto(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('edit-prod-id').value = p.id;
+  document.getElementById('edit-prod-nombre').value = p.nombre;
+  document.getElementById('edit-prod-unidad').value = p.unidad;
+  const s = document.getElementById('edit-prod-familia');
+  const grouped = {};
+  familias.forEach(f => {
+    const reg = regimenes.find(r => r.id === f.regimen_id);
+    const key = reg ? reg.nombre : 'Sin clasificar';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(f);
+  });
+  s.innerHTML = Object.entries(grouped).map(([reg, fams]) =>
+    `<optgroup label="${reg}">${fams.map(f => `<option value="${f.id}" ${f.id === p.familia_id ? 'selected' : ''}>${f.nombre}</option>`).join('')}</optgroup>`
+  ).join('');
+  openModal('modal-edit-producto');
+}
+async function saveProducto() {
+  const id = document.getElementById('edit-prod-id').value;
+  const nombre = document.getElementById('edit-prod-nombre').value.trim();
+  const familia_id = document.getElementById('edit-prod-familia').value;
+  const unidad = document.getElementById('edit-prod-unidad').value.trim() || 'ud';
+  if (!nombre) { alert('Escribe un nombre'); return; }
+  try {
+    await db('productos', 'PATCH', { nombre, familia_id, unidad }, `?id=eq.${id}`);
+    closeModal('modal-edit-producto');
+    await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+}
+
+// ─── EDIT FAMILIA ───────────────────────────────────────────────
+function openEditFamilia(id) {
+  const f = familias.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('edit-familia-id').value = f.id;
+  document.getElementById('edit-familia-nombre').value = f.nombre;
+  const s = document.getElementById('edit-familia-regimen');
+  s.innerHTML = regimenes.map(r => `<option value="${r.id}" ${r.id === f.regimen_id ? 'selected' : ''}>${r.nombre}</option>`).join('');
+  openModal('modal-edit-familia');
+}
+async function saveFamilia() {
+  const id = document.getElementById('edit-familia-id').value;
+  const nombre = document.getElementById('edit-familia-nombre').value.trim();
+  const regimen_id = document.getElementById('edit-familia-regimen').value;
+  if (!nombre) { alert('Escribe un nombre'); return; }
+  try {
+    await db('familias', 'PATCH', { nombre, regimen_id }, `?id=eq.${id}`);
+    closeModal('modal-edit-familia');
+    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+}
+
+// ─── REGIMENES ADMIN ────────────────────────────────────────────
+function renderRegimenesAdmin() {
+  const c = document.getElementById('admin-regimenes-list');
+  if (!regimenes.length) { c.innerHTML = '<div class="empty"><div class="empty-icon">📌</div><p>No hay regímenes</p></div>'; return; }
+  c.innerHTML = `<div class="card"><table>
+    <thead><tr><th>Nombre</th><th style="width:120px;text-align:right">Acciones</th></tr></thead>
+    <tbody>${regimenes.map(r => `<tr>
+      <td>${r.nombre}</td>
+      <td style="text-align:right">
+        <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditRegimen('${r.id}')">✏️</button>
+        <button class="btn-danger btn-sm" onclick="deleteRegimen('${r.id}')">✕</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+function openEditRegimen(id) {
+  const r = id ? regimenes.find(x => x.id === id) : null;
+  document.getElementById('edit-regimen-id').value = r ? r.id : '';
+  document.getElementById('edit-regimen-nombre').value = r ? r.nombre : '';
+  document.getElementById('regimen-modal-title').textContent = r ? '✏️ Editar régimen' : '📌 Añadir régimen';
+  openModal('modal-regimen');
+}
+async function saveRegimen() {
+  const id = document.getElementById('edit-regimen-id').value;
+  const nombre = document.getElementById('edit-regimen-nombre').value.trim();
+  if (!nombre) { alert('Escribe un nombre'); return; }
+  try {
+    if (id) {
+      await db('regimenes', 'PATCH', { nombre }, `?id=eq.${id}`);
+    } else {
+      await db('regimenes', 'POST', { nombre, orden: regimenes.length + 1 });
+    }
+    document.getElementById('edit-regimen-nombre').value = '';
+    document.getElementById('edit-regimen-id').value = '';
+    closeModal('modal-regimen');
+    await loadRegimenes(); renderRegimenesAdmin(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+}
+async function deleteRegimen(id) {
+  if (!confirm('¿Eliminar este régimen? Las familias asociadas quedarán sin régimen.')) return;
+  try {
+    await db('regimenes', 'DELETE', null, `?id=eq.${id}`);
+    await loadRegimenes(); renderRegimenesAdmin(); renderPedidoNoche();
+  } catch(e) { alert('❌ Error al eliminar. Inténtalo de nuevo.'); }
+}
+
 // ─── ACCORDION ──────────────────────────────────────────────────
 function toggleReg(regId) {
   document.getElementById('rb_' + regId).classList.toggle('closed');
@@ -1076,5 +1227,89 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<div class="modal-overlay" id="modal-edit-personal">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar camarero</div>
+    <input type="hidden" id="edit-personal-id">
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="edit-personal-nombre">
+    </div>
+    <div class="form-group">
+      <label>Cargo</label>
+      <select id="edit-personal-cargo">
+        <option value="Camarero">Camarero</option>
+        <option value="Tercer encargado">Tercer encargado</option>
+        <option value="Segundo encargado">Segundo encargado</option>
+        <option value="Manager">Manager</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-personal')">Cancelar</button>
+      <button class="btn-primary" onclick="savePersonal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit-producto">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar producto</div>
+    <input type="hidden" id="edit-prod-id">
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="edit-prod-nombre">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Familia</label>
+        <select id="edit-prod-familia"></select>
+      </div>
+      <div class="form-group">
+        <label>Unidad</label>
+        <input type="text" id="edit-prod-unidad">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-producto')">Cancelar</button>
+      <button class="btn-primary" onclick="saveProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit-familia">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar familia</div>
+    <input type="hidden" id="edit-familia-id">
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="edit-familia-nombre">
+    </div>
+    <div class="form-group">
+      <label>Régimen</label>
+      <select id="edit-familia-regimen"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-familia')">Cancelar</button>
+      <button class="btn-primary" onclick="saveFamilia()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-regimen">
+  <div class="modal">
+    <div class="modal-title" id="regimen-modal-title">📌 Añadir régimen</div>
+    <input type="hidden" id="edit-regimen-id">
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="edit-regimen-nombre" placeholder="Nombre del régimen">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-regimen')">Cancelar</button>
+      <button class="btn-primary" onclick="saveRegimen()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
