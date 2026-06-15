@@ -3,135 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f1117">
+<meta name="theme-color" content="#F5F5F7">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Pedidos">
 <link rel="apple-touch-icon" href="icon-512.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Bar Inventory — Hotel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
-  --bg: #0f1117;
-  --bg2: #181b24;
-  --bg3: #1e2130;
-  --border: rgba(255,255,255,0.08);
-  --border2: rgba(255,255,255,0.15);
-  --text: #f0f2f7;
-  --text2: #9099b0;
-  --text3: #5c6478;
-  --accent: #4f7cff;
-  --accent2: #3563e9;
-  --green: #22c55e;
-  --amber: #f59e0b;
-  --red: #ef4444;
-  --piscina: #06b6d4;
-  --lobby: #a78bfa;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --bg: #F5F5F7;
+  --bg2: #FFFFFF;
+  --bg3: #F5F5F7;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.12);
+  --text: #1D1D1F;
+  --text2: #6E6E73;
+  --text3: #86868B;
+  --accent: #0071E3;
+  --accent2: #0077ED;
+  --green: #30D158;
+  --amber: #FF9F0A;
+  --red: #FF453A;
+  --piscina: #0A84FF;
+  --lobby: #AF52DE;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
+  /* Texto sobre fondos de color suave (badges, alerts, btn-success) */
+  --text-on-blue: #0860C7;
+  --text-on-purple: #8A37B0;
+  --text-on-amber: #B25E00;
+  --text-on-green: #1A8A3D;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: var(--sf); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.45; padding-bottom: calc(64px + env(safe-area-inset-bottom)); -webkit-font-smoothing: antialiased; touch-action: manipulation; }
 a { color: var(--accent); text-decoration: none; }
 
-/* NAV */
-nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; gap: 4px; overflow-x: auto; position: sticky; top: 0; z-index: 100; }
-.nav-brand { font-size: 16px; font-weight: 700; color: var(--text); padding: 16px 16px 16px 0; margin-right: 8px; white-space: nowrap; border-right: 1px solid var(--border); }
-.nav-brand span { color: var(--accent); }
-.nav-tab { padding: 16px 14px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .15s; }
+/* TABS internas (usadas dentro de #section-pedidos) */
+.nav-tab { padding: 14px 14px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .15s; }
 .nav-tab:hover { color: var(--text); }
 .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+/* BOTTOM TAB BAR (navegacion principal con Inicio) */
+.tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(245,245,247,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 0.5px solid var(--border); display: flex; padding: 6px 0 max(6px, env(safe-area-inset-bottom)); z-index: 150; }
+.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 4px; cursor: pointer; min-height: 52px; -webkit-user-select: none; user-select: none; color: var(--text3); transition: color .15s; }
+.tab-item .tab-icon { font-size: 21px; line-height: 1; }
+.tab-item .tab-label { font-size: 11px; font-weight: 500; letter-spacing: -0.1px; }
+.tab-item.active { color: var(--accent); }
+
+/* TOPBAR (cabecera fija superior) */
+.topbar { position: sticky; top: 0; z-index: 100; background: rgba(245,245,247,0.86); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 0.5px solid var(--border); padding: max(10px, env(safe-area-inset-top)) 20px 12px; }
+.topbar-title { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+.topbar-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+/* SECTIONS */
+.section { display: none; }
+.section.active { display: block; }
+.cierre-tab { padding: 20px 16px 32px; max-width: 720px; margin: 0 auto; }
+
 /* VIEWS */
-.view { display: none; padding: 24px 20px; max-width: 900px; margin: 0 auto; }
+.view { display: none; padding: 20px 16px 32px; max-width: 720px; margin: 0 auto; }
 .view.active { display: block; }
 
 /* CARDS */
-.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
-.card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+.card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; letter-spacing: -0.2px; }
 
 /* BUTTONS */
-button { cursor: pointer; font-family: inherit; font-size: 14px; border: none; border-radius: var(--radius-sm); padding: 9px 18px; transition: all .15s; font-weight: 500; }
+button { cursor: pointer; font-family: var(--sf); font-size: 14px; border: none; border-radius: var(--radius-sm); padding: 11px 20px; transition: all .15s; font-weight: 600; -webkit-appearance: none; min-height: 40px; touch-action: manipulation; }
+button:active { transform: scale(0.98); }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent2); }
-.btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
-.btn-secondary:hover { background: var(--border); }
-.btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-.btn-danger:hover { background: rgba(239,68,68,0.25); }
-.btn-success { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-.btn-success:hover { background: rgba(34,197,94,0.25); }
-.btn-sm { padding: 6px 12px; font-size: 13px; }
-.btn-icon { padding: 7px; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 18px; line-height: 1; }
+.btn-primary:disabled { background: var(--border2); color: var(--text3); }
+.btn-secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { background: var(--bg3); }
+.btn-danger { background: rgba(255,69,58,0.1); color: var(--red); border: 1px solid rgba(255,69,58,0.2); }
+.btn-danger:hover { background: rgba(255,69,58,0.18); }
+.btn-success { background: rgba(48,209,88,0.12); color: var(--text-on-green); border: 1px solid rgba(48,209,88,0.3); }
+.btn-success:hover { background: rgba(48,209,88,0.2); }
+.btn-sm { padding: 7px 14px; font-size: 13px; min-height: 32px; }
+.btn-icon { padding: 8px; border-radius: 10px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 17px; line-height: 1; min-height: 36px; }
 .btn-icon:hover { color: var(--text); background: var(--border); }
 
 /* FORM */
 .form-group { margin-bottom: 14px; }
 label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
-input, select, textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,124,255,0.15); }
+input, select, textarea { width: 100%; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: var(--sf); font-size: 15px; outline: none; min-height: 40px; -webkit-appearance: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,113,227,0.12); }
 select option { background: var(--bg2); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } }
 
 /* BADGES */
-.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-.badge-piscina { background: rgba(6,182,212,0.15); color: var(--piscina); }
-.badge-lobby { background: rgba(167,139,250,0.15); color: var(--lobby); }
-.badge-pendiente { background: rgba(245,158,11,0.15); color: var(--amber); }
-.badge-completado { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 980px; font-size: 12px; font-weight: 600; }
+.badge-piscina { background: rgba(10,132,255,0.1); color: var(--text-on-blue); }
+.badge-lobby { background: rgba(175,82,222,0.1); color: var(--text-on-purple); }
+.badge-pendiente { background: rgba(255,159,10,0.12); color: var(--text-on-amber); }
+.badge-completado { background: rgba(48,209,88,0.12); color: var(--text-on-green); }
 
 /* TABLES */
 .tbl-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th { text-align: left; padding: 10px 12px; color: var(--text2); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
-td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { text-align: left; padding: 10px 8px; color: var(--text2); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; border-bottom: 0.5px solid var(--border); }
+td { padding: 11px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.02); }
+tr:hover td { background: rgba(0,0,0,0.015); }
 
 /* PRODUCT LIST IN ORDER */
-.product-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.product-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
 .product-row:last-child { border-bottom: none; }
-.product-name { font-size: 14px; }
-.product-family { font-size: 12px; color: var(--text3); }
+.product-name { font-size: 14px; font-weight: 500; }
+.product-family { font-size: 12px; color: var(--text3); margin-top: 1px; }
 
 /* CONFIRM ROW */
 .confirm-row { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
-.confirm-row.ok { border-color: rgba(34,197,94,0.3); }
-.confirm-row.diff { border-color: rgba(245,158,11,0.3); }
+.confirm-row.ok { border-color: rgba(48,209,88,0.35); background: rgba(48,209,88,0.05); }
+.confirm-row.diff { border-color: rgba(255,159,10,0.35); background: rgba(255,159,10,0.05); }
 
 /* STAT CARDS */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-.stat-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; }
-.stat-value { font-size: 26px; font-weight: 700; color: var(--text); }
-.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.stat-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 8px; text-align: center; }
+.stat-label { font-size: 10px; color: var(--text2); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.stat-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+@media(max-width:380px){ .stat-value { font-size: 17px; } .stat-label { font-size: 9px; } }
 
 /* FAMILY SECTION */
 .family-section { margin-bottom: 20px; }
-.family-header { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; padding: 8px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.family-header { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; padding: 8px 0 6px; border-bottom: 0.5px solid var(--border); margin-bottom: 4px; }
 
 /* ALERTS */
-.alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; }
-.alert-info { background: rgba(79,124,255,0.1); border: 1px solid rgba(79,124,255,0.3); color: #93b4ff; }
-.alert-warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
-.alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+.alert { padding: 13px 16px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; }
+.alert-info { background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.18); color: var(--text-on-blue); }
+.alert-warn { background: rgba(255,159,10,0.1); border: 1px solid rgba(255,159,10,0.22); color: var(--text-on-amber); }
+.alert-success { background: rgba(48,209,88,0.1); border: 1px solid rgba(48,209,88,0.22); color: var(--text-on-green); }
 
 /* ACCORDION */
 .reg-body { padding: 8px 0 4px; }
 .reg-body.closed { display: none; }
-.reg-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(79,124,255,0.1); border-radius: 8px; margin-bottom: 8px; cursor: pointer; user-select: none; }
-.reg-header-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+.reg-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: rgba(0,113,227,0.07); border-radius: 12px; margin-bottom: 8px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.reg-header-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
 .reg-arrow { font-size: 13px; color: var(--accent); transition: transform .2s; }
 .reg-header.closed .reg-arrow { transform: rotate(-90deg); }
 
 .fam-body { display: none; padding: 4px 0 8px; }
 .fam-body.open { display: block; }
-.fam-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; cursor: pointer; user-select: none; }
+.fam-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 10px; margin-bottom: 4px; cursor: pointer; -webkit-user-select: none; user-select: none; }
 .fam-header-title { font-size: 13px; font-weight: 600; color: var(--text); }
 .fam-arrow { font-size: 11px; color: var(--text3); transition: transform .2s; }
 .fam-header.open .fam-arrow { transform: rotate(90deg); }
-.fam-badge { font-size: 11px; font-weight: 700; color: var(--green); background: rgba(34,197,94,0.12); padding: 2px 8px; border-radius: 20px; display: none; }
+.fam-badge { font-size: 11px; font-weight: 700; color: var(--text-on-green); background: rgba(48,209,88,0.12); padding: 3px 10px; border-radius: 980px; display: none; }
 .fam-badge.on { display: inline-block; }
 
 /* SPINNER */
@@ -140,31 +164,31 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .loading { display: flex; align-items: center; gap: 10px; color: var(--text2); padding: 20px 0; }
 
 /* TABS inside view */
-.view-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; width: fit-content; }
-.view-tab { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all .15s; }
-.view-tab.active { background: var(--accent); color: #fff; }
-.view-tab:hover:not(.active) { background: var(--bg3); color: var(--text); }
+.view-tabs { display: flex; gap: 4px; margin-bottom: 18px; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; max-width: 100%; overflow-x: auto; }
+.view-tab { padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all .15s; white-space: nowrap; }
+.view-tab.active { background: var(--bg2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.view-tab:hover:not(.active) { color: var(--text); }
 
 /* MODAL */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
-.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.modal { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 20px; padding: 22px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.18); }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; letter-spacing: -0.2px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 
 /* SEARCH */
 .search-box { position: relative; }
 .search-box input { padding-left: 36px; }
-.search-box::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+.search-box::before { content: '🔍'; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; opacity: .55; }
 
 /* QTY INPUT */
 input[type=number] { -moz-appearance: textfield; }
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 .qty-ctrl { display: flex; align-items: center; gap: 6px; }
-.qty-ctrl button { width: 44px; height: 44px; padding: 0; border-radius: 10px; color: #fff; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; }
-.qty-ctrl input { width: 54px; text-align: center; padding: 8px 4px; font-size: 17px; font-weight: 700; }
-.qty-ctrl .btn-minus { background: #e53e3e; } .qty-ctrl .btn-minus:active { background: #c53030; } .qty-ctrl .btn-plus { background: #38a169; } .qty-ctrl .btn-plus:active { background: #276749; }
+.qty-ctrl button { width: 44px; height: 44px; padding: 0; border-radius: 50%; color: #fff; font-size: 21px; font-weight: 600; display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; min-height: 44px; }
+.qty-ctrl input { width: 52px; text-align: center; padding: 8px 4px; font-size: 16px; font-weight: 600; min-height: 44px; }
+.qty-ctrl .btn-minus { background: var(--red); } .qty-ctrl .btn-minus:active { background: #D6362F; } .qty-ctrl .btn-plus { background: var(--green); } .qty-ctrl .btn-plus:active { background: #25A847; }
 
 /* EMPTY STATE */
 .empty { text-align: center; padding: 40px 20px; color: var(--text3); }
@@ -172,34 +196,226 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 .empty p { font-size: 14px; }
 
 /* CHIP */
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 980px; font-size: 12px; font-weight: 600; background: var(--bg3); border: 0.5px solid var(--border); color: var(--text2); }
+
+/* ====== HOME / DASHBOARD ====== */
+.home-greeting { padding: 20px 16px 4px; }
+.home-greeting-sub { font-size: 14px; color: var(--text2); }
+.home-greeting-main { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; margin-top: 2px; }
+.home-section { padding: 0 16px; margin-top: 20px; }
+.home-section-label { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
+.home-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.home-section-action { font-size: 14px; color: var(--accent); font-weight: 500; cursor: pointer; }
+
+.home-banner { background: linear-gradient(135deg, var(--accent), #1A8AFF); border-radius: var(--radius); padding: 18px; color: #fff; margin-bottom: 8px; }
+.home-banner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.home-banner-title { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+.home-banner-sub { font-size: 13px; opacity: .85; margin-top: 2px; }
+.home-banner-btn { background: rgba(255,255,255,0.22); border: none; color: #fff; padding: 8px 16px; border-radius: 980px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.home-banner-btn:active { background: rgba(255,255,255,0.32); }
+
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quick-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; text-align: left; transition: transform .1s, box-shadow .15s; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+.quick-card:active { transform: scale(.97); }
+.quick-icon { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 10px; }
+.quick-title { font-size: 14px; font-weight: 600; letter-spacing: -0.1px; }
+.quick-desc { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+
+.home-list-card { background: var(--bg2); border-radius: var(--radius); overflow: hidden; border: 0.5px solid var(--border); }
+.home-list-row { display: flex; align-items: center; padding: 13px 16px; border-bottom: 0.5px solid var(--border); gap: 12px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.home-list-row:last-child { border-bottom: none; }
+.home-list-row:active { background: rgba(0,0,0,0.02); }
+.home-list-left { flex: 1; min-width: 0; }
+.home-list-name { font-size: 15px; font-weight: 500; }
+.home-list-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.home-list-icon { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.home-chevron { color: var(--text3); font-size: 18px; flex-shrink: 0; }
+
+.home-alert-card { background: var(--bg2); border-radius: var(--radius); padding: 13px; border: 1px solid rgba(255,69,58,0.18); display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.home-alert-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,69,58,0.1); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; color: var(--red); }
+
+.icon-blue { background: rgba(10,132,255,0.1); }
+.icon-purple { background: rgba(175,82,222,0.1); }
+.icon-green { background: rgba(48,209,88,0.12); }
+.icon-amber { background: rgba(255,159,10,0.12); }
+.icon-red { background: rgba(255,69,58,0.1); }
+
+/* SKELETON LOADERS */
+.skeleton-card { display: block; }
+.skeleton-line { height: 11px; border-radius: 6px; background: linear-gradient(90deg, var(--bg3) 25%, var(--border2) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+@keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
+.skeleton-row .skeleton-icon { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(90deg, var(--bg3) 25%, var(--border2) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+.skeleton-row .skeleton-text { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+/* ====== CHECKLIST CIERRE (selector de bar + acordeón con progreso) ====== */
+.chk-bar-row { display: flex; gap: 8px; }
+.chk-bar-pill { flex: 1; padding: 11px 12px; border-radius: 980px; border: 1.5px solid var(--border2); background: var(--bg2); font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; transition: all .15s; color: var(--text2); -webkit-user-select: none; user-select: none; }
+.chk-bar-pill.active { color: #fff; border-color: transparent; }
+.chk-bar-pill.active.piscina { background: var(--piscina); }
+.chk-bar-pill.active.lobby { background: var(--lobby); }
+
+.chk-section { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+.chk-section-header { display: flex; align-items: center; gap: 12px; padding: 16px 18px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.chk-section-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+.chk-section-info { flex: 1; min-width: 0; }
+.chk-section-title { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+.chk-section-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.chk-section-sub.done { color: var(--green); font-weight: 600; }
+.chk-progress-ring { width: 36px; height: 36px; flex-shrink: 0; transform: rotate(-90deg); }
+.chk-progress-ring circle { fill: none; stroke-width: 3.5; }
+.chk-progress-ring .bg { stroke: var(--border2); }
+.chk-progress-ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .3s ease; }
+.chk-progress-ring.done .fg { stroke: var(--green); }
+.chk-arrow { color: var(--text3); font-size: 13px; transition: transform .2s; flex-shrink: 0; }
+.chk-arrow.open { transform: rotate(90deg); }
+
+.chk-items { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+.chk-items.open { max-height: 2000px; }
+.chk-item { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-top: 0.5px solid var(--border); cursor: pointer; -webkit-user-select: none; user-select: none; transition: background .15s; }
+.chk-item:active { background: rgba(0,0,0,0.02); }
+.chk-item input { display: none; }
+.chk-checkbox { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .15s; background: var(--bg2); }
+.chk-checkbox svg { width: 14px; height: 14px; opacity: 0; transform: scale(0.5); transition: all .15s; }
+.chk-item input:checked + .chk-checkbox { background: var(--green); border-color: var(--green); }
+.chk-item input:checked + .chk-checkbox svg { opacity: 1; transform: scale(1); }
+.chk-item-label { flex: 1; font-size: 14px; font-weight: 500; transition: all .15s; }
+.chk-item input:checked ~ .chk-item-label { color: var(--text3); text-decoration: line-through; }
+.chk-item:last-child { padding-bottom: 16px; }
+
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="nav-brand">🍸 <span>Bar</span>Inventory</div>
-  <div class="nav-tab active" onclick="showView('pedido-noche',this)">📋 Pedido Noche</div>
-  <div class="nav-tab" onclick="showView('pedido-manana',this)">🌅 Recogida Mañana</div>
-  <div class="nav-tab" onclick="showView('historial',this)">📊 Historial</div>
-  <div class="nav-tab" onclick="showView('admin',this)">⚙️ Administrar</div>
-</nav>
+<div class="topbar" id="topbar">
+  <div class="topbar-title" id="topbar-title">🍸 Bares</div>
+  <div class="topbar-sub" id="topbar-sub">Hotel — Gestión de inventario</div>
+</div>
+
+<!-- ============ SECCIÓN INICIO ============ -->
+<div id="section-home" class="section active">
+  <div class="home-greeting">
+    <div class="home-greeting-sub" id="home-fecha">—</div>
+    <div class="home-greeting-main">Bienvenido</div>
+  </div>
+
+  <div class="home-section" style="margin-top:16px;">
+    <div id="home-todo-ok" style="display:none;">
+      <div class="alert alert-success" style="margin-bottom:0;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">✅</span>
+        <div>
+          <div style="font-weight:600;">Todo en orden</div>
+          <div style="font-size:12px;opacity:.85;">No hay pedidos pendientes ni alertas de stock</div>
+        </div>
+      </div>
+    </div>
+    <div id="home-pendientes-banner"></div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-label">Acciones rápidas</div>
+    <div class="quick-grid">
+      <div class="quick-card" onclick="goSection('pedidos','pedido-noche')">
+        <div class="quick-icon icon-blue">📋</div>
+        <div class="quick-title">Nuevo pedido</div>
+        <div class="quick-desc">Pedir reposición al almacén</div>
+      </div>
+      <div class="quick-card" onclick="goSection('pedidos','pedido-manana')">
+        <div class="quick-icon icon-green">✅</div>
+        <div class="quick-title">Confirmar recogida</div>
+        <div class="quick-desc">Marcar lo que llegó del almacén</div>
+      </div>
+      <div class="quick-card" onclick="goSection('cierre',null,'checklist')">
+        <div class="quick-icon icon-purple">🔒</div>
+        <div class="quick-title">Checklist cierre</div>
+        <div class="quick-desc">Apertura y cierre de turno</div>
+      </div>
+      <div class="quick-card" onclick="goSection('cierre',null,'caja')">
+        <div class="quick-icon icon-amber">💰</div>
+        <div class="quick-title">Cerrar caja</div>
+        <div class="quick-desc">Calcular recaudación y visas</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-label">Este mes</div>
+    <div class="stats-grid" id="home-stats">
+      <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+      <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+      <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+      <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+    </div>
+  </div>
+
+  <div class="home-section" id="home-alertas-section">
+    <div class="home-section-header">
+      <div class="home-section-label" style="margin-bottom:0;">Alertas sin stock</div>
+      <span class="home-section-action" onclick="goSection('pedidos','historial')">Ver todas</span>
+    </div>
+    <div id="home-alertas">
+      <div class="home-list-card">
+        <div class="skeleton-row"><div class="skeleton-icon"></div><div class="skeleton-text"><div class="skeleton-line" style="width:70%;"></div><div class="skeleton-line" style="width:40%;"></div></div></div>
+        <div class="skeleton-row"><div class="skeleton-icon"></div><div class="skeleton-text"><div class="skeleton-line" style="width:55%;"></div><div class="skeleton-line" style="width:35%;"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-label">Accesos directos</div>
+    <div class="home-list-card">
+      <div class="home-list-row" onclick="goSection('pedidos','pedido-noche')">
+        <div class="home-list-icon icon-blue">📋</div>
+        <div class="home-list-left">
+          <div class="home-list-name">Pedidos</div>
+          <div class="home-list-meta">Pedido noche, recogida y historial</div>
+        </div>
+        <span class="home-chevron">›</span>
+      </div>
+      <div class="home-list-row" onclick="goSection('cierre')">
+        <div class="home-list-icon icon-purple">🔒</div>
+        <div class="home-list-left">
+          <div class="home-list-name">Cierre</div>
+          <div class="home-list-meta">Checklist y calculadora de caja</div>
+        </div>
+        <span class="home-chevron">›</span>
+      </div>
+      <div class="home-list-row" onclick="goSection('admin')">
+        <div class="home-list-icon icon-amber">⚙️</div>
+        <div class="home-list-left">
+          <div class="home-list-name">Administrar</div>
+          <div class="home-list-meta">Personal, productos y configuración</div>
+        </div>
+        <span class="home-chevron">›</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- /section-home -->
+
+<!-- ============ SECCIÓN PEDIDOS ============ -->
+<div id="section-pedidos" class="section">
+<div class="view-tabs" style="margin:16px 20px 0;">
+  <div class="nav-tab active" data-view="pedido-noche" onclick="showView('pedido-noche',this)">📋 Pedido Noche</div>
+  <div class="nav-tab" data-view="pedido-manana" onclick="showView('pedido-manana',this)">🌅 Recogida Mañana</div>
+  <div class="nav-tab" data-view="historial" onclick="showView('historial',this)">📊 Historial</div>
+</div>
 
 <!-- ============ PEDIDO NOCHE ============ -->
 <div id="view-pedido-noche" class="view active">
   <div class="card">
     <div class="card-title">📋 Nuevo pedido de noche</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Camarero (encargado noche)</label>
-        <select id="pn-camarero"></select>
-      </div>
-      <div class="form-group">
-        <label>Bar</label>
-        <select id="pn-bar">
-          <option value="Bar Piscina">Bar Piscina</option>
-          <option value="Bar Lobby">Bar Lobby</option>
-        </select>
+    <div class="form-group">
+      <label>Camarero (encargado noche)</label>
+      <select id="pn-camarero"></select>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Bar</label>
+      <input type="hidden" id="pn-bar" value="Bar Piscina">
+      <div class="chk-bar-row">
+        <div class="chk-bar-pill active piscina" data-bar="Bar Piscina" onclick="setPnBar('Bar Piscina', this)">🏊 Bar Piscina</div>
+        <div class="chk-bar-pill lobby" data-bar="Bar Lobby" onclick="setPnBar('Bar Lobby', this)">🏨 Bar Lobby</div>
       </div>
     </div>
   </div>
@@ -209,8 +425,8 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   </div>
 
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-    <button class="btn-secondary" onclick="clearPedido()">Limpiar</button>
-    <button class="btn-primary" onclick="guardarPedido()">✓ Guardar pedido</button>
+    <button class="btn-secondary" onclick="if(confirm('¿Limpiar todas las cantidades y el camarero seleccionado?')) clearPedido()">Limpiar</button>
+    <button class="btn-primary" onclick="revisarPedido()">✓ Revisar y guardar</button>
   </div>
 </div>
 
@@ -274,14 +490,18 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   <div id="h-sin-stock-alert"></div>
   <div id="h-lista"></div>
 </div>
+</div><!-- /section-pedidos -->
 
-<!-- ============ ADMIN ============ -->
-<div id="view-admin" class="view">
+<!-- ============ SECCIÓN ADMINISTRAR ============ -->
+<div id="section-admin" class="section">
+<div id="view-admin" class="view active">
   <div class="view-tabs">
     <div class="view-tab active" onclick="showAdminTab('personal')">👥 Personal</div>
     <div class="view-tab" onclick="showAdminTab('productos')">📦 Productos</div>
     <div class="view-tab" onclick="showAdminTab('familias')">🏷️ Familias</div>
     <div class="view-tab" onclick="showAdminTab('regimenes')">📌 Regímenes</div>
+    <div class="view-tab" onclick="showAdminTab('checklist')">✅ Tareas Checklist</div>
+    <div class="view-tab" onclick="showAdminTab('caja')">💰 Fondo de Caja</div>
   </div>
 
   <!-- PERSONAL -->
@@ -321,7 +541,59 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     </div>
     <div id="admin-familias-list"><div class="loading"><div class="spinner"></div> Cargando...</div></div>
   </div>
+
+  <!-- TAREAS CHECKLIST -->
+  <div id="admin-checklist" style="display:none;">
+    <div class="form-group" style="max-width:260px;margin-bottom:16px;">
+      <label>Bar</label>
+      <select id="chk-admin-bar" onchange="renderChecklistAdmin()">
+        <option value="Bar Piscina">Bar Piscina</option>
+        <option value="Bar Lobby">Bar Lobby</option>
+      </select>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:600;">Tareas del checklist</div>
+      <button class="btn-primary btn-sm" onclick="openEditTareaChecklist(null)">+ Añadir</button>
+    </div>
+    <div id="admin-checklist-list"><div class="loading"><div class="spinner"></div> Cargando...</div></div>
+  </div>
+
+  <!-- FONDO DE CAJA -->
+  <div id="admin-caja" style="display:none;">
+    <div class="card" style="max-width:320px;">
+      <div class="card-title">💰 Fondo de caja</div>
+      <div class="form-group">
+        <label>Importe del fondo (€)</label>
+        <input type="number" id="admin-fondo-caja" step="0.01" value="300" inputmode="decimal">
+      </div>
+      <button class="btn-primary btn-sm" onclick="guardarFondoCaja()">Guardar</button>
+    </div>
+  </div>
+</div><!-- /view-admin -->
+</div><!-- /section-admin -->
+
+<!-- ============ SECCIÓN CIERRE ============ -->
+<div id="section-cierre" class="section">
+  <div class="view-tabs" style="margin:16px 20px 0;">
+    <div class="view-tab active" data-tab="checklist" onclick="showCierreTab('checklist',this)">✅ Checklist</div>
+    <div class="view-tab" data-tab="caja" onclick="showCierreTab('caja',this)">💰 Caja</div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div id="cierre-checklist" class="cierre-tab active">
+    <div class="chk-bar-row" style="margin-bottom:14px;">
+      <div class="chk-bar-pill active piscina" data-bar="Bar Piscina" onclick="setChkBar('Bar Piscina', this)">🏊 Bar Piscina</div>
+      <div class="chk-bar-pill lobby" data-bar="Bar Lobby" onclick="setChkBar('Bar Lobby', this)">🏨 Bar Lobby</div>
+    </div>
+    <div id="chk-list"><div class="loading"><div class="spinner"></div> Cargando checklist...</div></div>
+  </div>
+
+  <!-- CAJA -->
+  <div id="cierre-caja" class="cierre-tab" style="display:none;">
+    <div id="caja-container"></div>
+  </div>
 </div>
+
 
 <!-- ============ MODALS ============ -->
 <div class="modal-overlay" id="modal-add-personal">
@@ -330,6 +602,15 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     <div class="form-group">
       <label>Nombre</label>
       <input type="text" id="new-personal-nombre" placeholder="Nombre completo o iniciales">
+    </div>
+    <div class="form-group">
+      <label>Cargo</label>
+      <select id="new-personal-cargo">
+        <option value="Camarero">Camarero</option>
+        <option value="Tercer encargado">Tercer encargado</option>
+        <option value="Segundo encargado">Segundo encargado</option>
+        <option value="Manager">Manager</option>
+      </select>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal('modal-add-personal')">Cancelar</button>
@@ -369,6 +650,10 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       <label>Nombre</label>
       <input type="text" id="new-familia-nombre" placeholder="Nombre de la familia">
     </div>
+    <div class="form-group">
+      <label>Régimen</label>
+      <select id="new-familia-regimen"></select>
+    </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal('modal-add-familia')">Cancelar</button>
       <button class="btn-primary" onclick="addFamilia()">Guardar</button>
@@ -387,6 +672,15 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-resumen-pedido">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title" id="resumen-title">📋 Resumen del pedido</div>
+    <div id="resumen-aviso"></div>
+    <div id="resumen-lineas" style="max-height:50vh;overflow-y:auto;"></div>
+    <div id="resumen-footer" class="modal-footer"></div>
+  </div>
+</div>
+
 
 <div class="modal-overlay" id="modal-resolver-stock">
   <div class="modal">
@@ -399,6 +693,37 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal('modal-resolver-stock')">Cancelar</button>
       <button class="btn-success" onclick="confirmarResolver()">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tarea-checklist">
+  <div class="modal">
+    <div class="modal-title" id="modal-tarea-chk-title">➕ Añadir tarea</div>
+    <input type="hidden" id="tarea-chk-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Bar</label>
+        <select id="tarea-chk-bar">
+          <option value="Bar Piscina">Bar Piscina</option>
+          <option value="Bar Lobby">Bar Lobby</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="tarea-chk-tipo">
+          <option value="apertura">Apertura</option>
+          <option value="cierre">Cierre</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción de la tarea</label>
+      <input type="text" id="tarea-chk-desc" placeholder="Ej: Revisar cámaras de frío">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-tarea-checklist')">Cancelar</button>
+      <button class="btn-primary" onclick="saveTareaChecklist()">Guardar</button>
     </div>
   </div>
 </div>
@@ -419,9 +744,20 @@ async function db(table, method='GET', body=null, query='') {
   return r.json();
 }
 
+// ─── Escape HTML para prevenir XSS ─────────────────────────────
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ─── State ─────────────────────────────────────────────────────
 let personal = [], familias = [], productos = [], regimenes = [], pedidoLineas = {};
 let currentPedidoId = null;
+let checklistTareas = [];
+let checklistState = {}; // { [tareaId]: boolean } — en memoria, se resetea al recargar
+let chkBar = 'Bar Piscina';
+let chkOpenSection = 'apertura'; // acordeón: 'apertura' | 'cierre' | null
+let fondoCaja = 300;
+const DENOMINACIONES = [0.1,0.2,0.5,1,2,5,10,20,50,100,200,500];
 
 // ─── Init ──────────────────────────────────────────────────────
 async function init() {
@@ -431,6 +767,7 @@ async function init() {
     await Promise.all([loadPersonal(), loadFamilias(), loadProductos(), loadRegimenes()]);
     renderPedidoNoche();
     populateCamareroSelects();
+    loadHome();
   } catch(e) {
     c.innerHTML = '<div class="alert alert-warn">⚠️ Error al conectar con el servidor. Comprueba tu conexión e intenta recargar la página.</div>';
     console.error('Init error:', e);
@@ -451,31 +788,208 @@ async function loadRegimenes() {
 }
 
 // ─── Navigation ────────────────────────────────────────────────
+const SECTION_TITLES = {
+  home:    { title: '🍸 Bares', sub: 'Hotel — Gestión de inventario' },
+  pedidos: { title: '📋 Pedidos', sub: 'Inventario y recogida' },
+  cierre:  { title: '🔒 Cierre', sub: 'Checklist y caja' },
+  admin:   { title: '⚙️ Administrar', sub: 'Personal, productos y configuración' }
+};
+
+function showSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  const tab = el || document.getElementById(`tab-${name}`);
+  if (tab) tab.classList.add('active');
+  const meta = SECTION_TITLES[name];
+  if (meta) {
+    document.getElementById('topbar-title').textContent = meta.title;
+    document.getElementById('topbar-sub').textContent = meta.sub;
+  }
+  if (name === 'home') loadHome();
+  if (name === 'cierre') initCierre();
+  if (name === 'admin') loadAdmin();
+  window.scrollTo(0, 0);
+}
+
+// Navega a una sección y, opcionalmente, a una vista/tab interna concreta.
+// section: 'pedidos' | 'cierre' | 'admin' | 'home'
+// viewName: id de vista dentro de #section-pedidos (ej. 'pedido-noche')
+// cierreTab: 'checklist' | 'caja' dentro de #section-cierre
+function goSection(section, viewName, cierreTab) {
+  showSection(section);
+  if (viewName) {
+    const tabEl = document.querySelector(`#section-pedidos > .view-tabs .nav-tab[data-view="${viewName}"]`);
+    showView(viewName, tabEl);
+  }
+  if (cierreTab) {
+    const tabEl = document.querySelector(`#section-cierre > .view-tabs .view-tab[data-tab="${cierreTab}"]`);
+    showCierreTab(cierreTab, tabEl);
+  }
+}
+
 function showView(name, el) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#section-pedidos .view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('#section-pedidos > .view-tabs .nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
   if (el) el.classList.add('active');
   if (name === 'pedido-manana') loadPedidosPendientes();
   if (name === 'historial') loadHistorial();
-  if (name === 'admin') loadAdmin();
 }
 
 function showAdminTab(tab) {
-  ['personal','productos','familias','regimenes'].forEach(t => {
-    document.getElementById(`admin-${t}`).style.display = t === tab ? 'block' : 'none';
+  const tabs = ['personal','productos','familias','regimenes','checklist','caja'];
+  tabs.forEach(t => {
+    const el = document.getElementById(`admin-${t}`);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
   });
-  document.querySelectorAll('.view-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['personal','productos','familias','regimenes'][i] === tab);
+  document.querySelectorAll('#view-admin > .view-tabs .view-tab').forEach((t,i) => {
+    t.classList.toggle('active', tabs[i] === tab);
   });
+  if (tab === 'checklist') renderChecklistAdmin();
+  if (tab === 'caja') cargarFondoCajaAdmin();
 }
+
+function showCierreTab(tab, el) {
+  document.querySelectorAll('.cierre-tab').forEach(c => c.style.display = 'none');
+  document.getElementById(`cierre-${tab}`).style.display = 'block';
+  document.querySelectorAll('#section-cierre > .view-tabs .view-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (tab === 'caja') renderCaja();
+}
+
+function initCierre() {
+  if (!checklistTareas.length) loadChecklistTareas();
+  renderCaja();
+}
+
+// ─── Inicio (Home dashboard) ────────────────────────────────────
+async function loadHome() {
+  const fechaEl = document.getElementById('home-fecha');
+  fechaEl.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  try {
+    if (!personal.length) await Promise.all([loadPersonal(), loadFamilias(), loadProductos(), loadRegimenes()]);
+  } catch(e) { /* ignore, se reintenta en init */ }
+
+  const [sinPendientes, sinAlertas] = await Promise.all([renderHomePendientes(), renderHomeAlertas()]);
+  renderHomeStats();
+
+  // Estado "todo en orden": si no hay pedidos pendientes NI alertas de stock,
+  // se muestra un único bloque unificado en vez de dos alerts de éxito separados.
+  const okBanner = document.getElementById('home-todo-ok');
+  if (sinPendientes && sinAlertas) {
+    okBanner.style.display = 'block';
+    document.getElementById('home-pendientes-banner').innerHTML = '';
+    document.getElementById('home-alertas-section').style.display = 'none';
+  } else {
+    okBanner.style.display = 'none';
+    document.getElementById('home-alertas-section').style.display = '';
+  }
+}
+
+// Devuelve true si NO hay pedidos pendientes (para el estado "todo en orden")
+async function renderHomePendientes() {
+  const c = document.getElementById('home-pendientes-banner');
+  try {
+    const pedidos = await db('pedidos', 'GET', null, '?estado=eq.pendiente');
+    if (!pedidos.length) {
+      c.innerHTML = '';
+      return true;
+    }
+    c.innerHTML = `<div class="home-banner">
+      <div class="home-banner-row">
+        <div>
+          <div class="home-banner-title">${pedidos.length} pedido${pedidos.length===1?'':'s'} pendiente${pedidos.length===1?'':'s'}</div>
+          <div class="home-banner-sub">Esperando recogida del almacén</div>
+        </div>
+        <button class="home-banner-btn" onclick="goSection('pedidos','pedido-manana')">Ver →</button>
+      </div>
+    </div>`;
+    return false;
+  } catch(e) {
+    c.innerHTML = '<div class="alert alert-warn" style="margin-bottom:0;">⚠️ Error al cargar pendientes.</div>';
+    return false;
+  }
+}
+
+function renderHomeStats() {
+  const c = document.getElementById('home-stats');
+  c.innerHTML = `
+    <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+    <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+    <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>
+    <div class="stat-card skeleton-card"><div class="skeleton-line" style="width:60%;"></div><div class="skeleton-line" style="width:40%;height:20px;margin-top:6px;"></div></div>`;
+  loadHomeStatsData(c);
+}
+
+async function loadHomeStatsData(c) {
+  try {
+    const now = new Date();
+    const desde = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const hasta = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+    const pedidos = await db('pedidos', 'GET', null, `?created_at=gte.${desde}&created_at=lte.${hasta}`);
+    const total = pedidos.length;
+    const completados = pedidos.filter(p => p.estado === 'completado').length;
+    const piscina = pedidos.filter(p => p.bar === 'Bar Piscina').length;
+    const lobby = pedidos.filter(p => p.bar === 'Bar Lobby').length;
+    c.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-value">${total}</div><div class="stat-sub">este mes</div></div>
+      <div class="stat-card"><div class="stat-label">Completados</div><div class="stat-value" style="color:var(--green)">${completados}</div><div class="stat-sub">recogidas</div></div>
+      <div class="stat-card"><div class="stat-label">Bar Piscina</div><div class="stat-value" style="color:var(--piscina)">${piscina}</div><div class="stat-sub">pedidos</div></div>
+      <div class="stat-card"><div class="stat-label">Bar Lobby</div><div class="stat-value" style="color:var(--lobby)">${lobby}</div><div class="stat-sub">pedidos</div></div>`;
+  } catch(e) {
+    c.innerHTML = '<div class="alert alert-warn">⚠️ Error al cargar las estadísticas.</div>';
+  }
+}
+
+// Devuelve true si NO hay alertas de stock pendientes (para el estado "todo en orden")
+async function renderHomeAlertas() {
+  const c = document.getElementById('home-alertas');
+  try {
+    const alertasResueltas = await db('alertas_stock', 'GET', null, '?resuelto=eq.true').catch(() => []);
+    const resueltosIds = new Set(alertasResueltas.map(a => a.producto_id));
+
+    const lineas = await db('pedido_lineas', 'GET', null, '?motivo_diferencia=eq.sin_stock&order=created_at.desc&limit=20');
+    const vistos = new Set();
+    const pendientes = [];
+    lineas.forEach(l => {
+      if (resueltosIds.has(l.producto_id) || vistos.has(l.producto_id)) return;
+      const prod = productos.find(p => p.id === l.producto_id);
+      if (!prod) return;
+      vistos.add(l.producto_id);
+      pendientes.push(prod);
+    });
+
+    if (!pendientes.length) {
+      c.innerHTML = '';
+      return true;
+    }
+    c.innerHTML = pendientes.slice(0, 4).map(prod => {
+      const fam = familias.find(f => f.id === prod.familia_id);
+      return `<div class="home-alert-card">
+        <div class="home-alert-icon">⚠️</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;">${esc(prod.nombre)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px;">${fam ? esc(fam.nombre) : 'Sin familia'}</div>
+        </div>
+        <span class="badge" style="background:rgba(255,69,58,0.1);color:var(--red);">Sin stock</span>
+      </div>`;
+    }).join('');
+    return false;
+  } catch(e) {
+    c.innerHTML = '<div class="alert alert-warn">⚠️ Error al cargar las alertas.</div>';
+    return false;
+  }
+}
+
 
 // ─── Populate selects ──────────────────────────────────────────
 function populateCamareroSelects() {
   ['pn-camarero','pm-camarero'].forEach(id => {
     const s = document.getElementById(id);
     s.innerHTML = '<option value="">— Selecciona camarero —</option>' +
-      personal.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+      personal.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
   });
 }
 
@@ -505,7 +1019,7 @@ function renderPedidoNoche() {
     const rId = 'r_' + regId;
     html += '<div style="margin-bottom:16px;">';
     html += '<div class="reg-header" id="rh_' + regId + '" onclick="toggleReg(\'' + regId + '\')">';
-    html += '<span class="reg-header-title">📌 ' + regData.nombre + '</span>';
+    html += '<span class="reg-header-title">📌 ' + esc(regData.nombre) + '</span>';
     html += '<span class="reg-arrow">▾</span>';
     html += '</div>';
     html += '<div class="reg-body" id="rb_' + regId + '">';
@@ -514,7 +1028,7 @@ function renderPedidoNoche() {
       const fId = 'f_' + famNombre.replace(/[^a-z0-9]/gi, '_');
       html += '<div style="margin-bottom:6px;">';
       html += '<div class="fam-header" id="fh_' + fId + '" onclick="toggleFam(\'' + fId + '\')">';
-      html += '<span class="fam-header-title">' + famNombre + '</span>';
+      html += '<span class="fam-header-title">' + esc(famNombre) + '</span>';
       html += '<div style="display:flex;align-items:center;gap:6px;">';
       html += '<span class="fam-badge" id="fb_' + fId + '"></span>';
       html += '<span class="fam-arrow">▶</span>';
@@ -522,10 +1036,10 @@ function renderPedidoNoche() {
       html += '<div class="fam-body" id="fbd_' + fId + '">';
       prods.forEach(function(p) {
         html += '<div class="product-row">';
-        html += '<div><div class="product-name">' + p.nombre + '</div><div class="product-family">' + p.unidad + '</div></div>';
+        html += '<div><div class="product-name">' + esc(p.nombre) + '</div><div class="product-family">' + esc(p.unidad) + '</div></div>';
         html += '<div class="qty-ctrl">';
         html += '<button class="btn-minus" onclick="changeQty(\'' + p.id + '\',-1)">−</button>';
-        html += '<input type="number" id="qty-' + p.id + '" value="" placeholder="0" min="0" max="999" inputmode="numeric" onchange="validateQty(\'' + p.id + '\');updateBadges();">';
+        html += '<input type="number" id="qty-' + p.id + '" value="" placeholder="0" min="0" max="999" inputmode="numeric" oninput="updateBadges()" onchange="validateQty(\'' + p.id + '\');updateBadges();">';
         html += '<button class="btn-plus" onclick="changeQty(\'' + p.id + '\',1)">+</button>';
         html += '</div></div>';
       });
@@ -539,8 +1053,8 @@ function renderPedidoNoche() {
 
 function changeQty(id, delta) {
   const inp = document.getElementById(`qty-${id}`);
-  const v = Math.max(0, parseInt(inp.value||0) + delta);
-  inp.value = v;
+  const v = Math.min(999, Math.max(0, parseInt(inp.value||0) + delta));
+  inp.value = v > 0 ? v : '';
   updateBadges();
 }
 function validateQty(id) {
@@ -552,11 +1066,27 @@ function removeFromList(id) {
 }
 function clearPedido() {
   productos.forEach(p => { const el = document.getElementById(`qty-${p.id}`); if(el) el.value = ''; });
+  document.getElementById('pn-camarero').value = '';
   updateBadges();
 }
 
+// Pills de selección de bar en Pedido Noche
+function setPnBar(bar, el) {
+  document.getElementById('pn-bar').value = bar;
+  document.querySelectorAll('#view-pedido-noche .chk-bar-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+function resetPnBar() {
+  document.getElementById('pn-bar').value = 'Bar Piscina';
+  document.querySelectorAll('#view-pedido-noche .chk-bar-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('#view-pedido-noche .chk-bar-pill.piscina').classList.add('active');
+}
+
 let guardandoPedido = false;
-async function guardarPedido() {
+let adminSaving = false;
+
+// Paso 1: valida selección y abre el modal de resumen (o el aviso de pedido pendiente existente)
+async function revisarPedido() {
   if (guardandoPedido) return;
   const camarero = document.getElementById('pn-camarero').value;
   const bar = document.getElementById('pn-bar').value;
@@ -569,21 +1099,138 @@ async function guardarPedido() {
 
   if (!lineas.length) { alert('Añade al menos un producto con cantidad'); return; }
 
+  // ¿Hay ya un pedido pendiente para este bar?
+  let pedidoExistente = null;
+  try {
+    const pendientes = await db('pedidos', 'GET', null, `?estado=eq.pendiente&bar=eq.${encodeURIComponent(bar)}&order=created_at.desc&limit=1`);
+    if (pendientes.length) pedidoExistente = pendientes[0];
+  } catch(e) { /* si falla la comprobación, se sigue con el flujo normal de creación */ }
+
+  mostrarResumenPedido(lineas, camarero, bar, pedidoExistente);
+}
+
+// Pinta la lista de productos agrupada por familia dentro del modal de resumen
+function renderResumenLineas(lineas) {
+  const byFam = groupByFamily(lineas);
+  let totalUds = 0;
+  let html = '';
+  Object.entries(byFam).forEach(([fam, ls]) => {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;">${esc(fam)}</div>`;
+    ls.forEach(l => {
+      const prod = productos.find(p => p.id === l.producto_id);
+      totalUds += l.cantidad_pedida;
+      html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:14px;">
+        <span>${prod?esc(prod.nombre):'?'}</span>
+        <strong>${l.cantidad_pedida} ${prod?esc(prod.unidad):'ud'}</strong>
+      </div>`;
+    });
+  });
+  return { html, totalUds };
+}
+
+// Paso 2: muestra el modal de resumen. Si ya hay un pedido pendiente para el bar,
+// ofrece añadir a ese pedido en vez de crear uno nuevo.
+function mostrarResumenPedido(lineas, camarero, bar, pedidoExistente) {
+  const { html, totalUds } = renderResumenLineas(lineas);
+  const numProductos = lineas.length;
+
+  document.getElementById('resumen-lineas').innerHTML = html;
+
+  const aviso = document.getElementById('resumen-aviso');
+  const footer = document.getElementById('resumen-footer');
+  const title = document.getElementById('resumen-title');
+
+  if (pedidoExistente) {
+    title.textContent = `📋 Ya hay un pedido pendiente para ${bar}`;
+    const fecha = new Date(pedidoExistente.created_at).toLocaleString('es-ES', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    aviso.innerHTML = `<div class="alert alert-warn">Ya existe un pedido pendiente de recoger para <strong>${esc(bar)}</strong> (creado ${esc(fecha)}). Puedes añadir estos ${numProductos} producto${numProductos===1?'':'s'} (${totalUds} ud) a ese pedido, o crear uno nuevo independiente.</div>`;
+    footer.innerHTML = '';
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'btn-secondary';
+    btnCancel.textContent = 'Cancelar';
+    btnCancel.onclick = () => closeModal('modal-resumen-pedido');
+    const btnNuevo = document.createElement('button');
+    btnNuevo.className = 'btn-secondary';
+    btnNuevo.textContent = 'Crear pedido nuevo';
+    btnNuevo.onclick = () => guardarPedidoNuevo(lineas, camarero, bar);
+    const btnAdd = document.createElement('button');
+    btnAdd.className = 'btn-primary';
+    btnAdd.textContent = '+ Añadir al pendiente';
+    btnAdd.onclick = () => guardarPedidoExistente(lineas, pedidoExistente.id, bar);
+    footer.appendChild(btnCancel);
+    footer.appendChild(btnNuevo);
+    footer.appendChild(btnAdd);
+  } else {
+    title.textContent = '📋 Resumen del pedido';
+    aviso.innerHTML = `<div class="alert alert-info">${esc(bar)} · ${numProductos} producto${numProductos===1?'':'s'} · ${totalUds} ud en total</div>`;
+    footer.innerHTML = '';
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'btn-secondary';
+    btnCancel.textContent = 'Volver';
+    btnCancel.onclick = () => closeModal('modal-resumen-pedido');
+    const btnConfirm = document.createElement('button');
+    btnConfirm.className = 'btn-primary';
+    btnConfirm.textContent = '✓ Confirmar y guardar';
+    btnConfirm.onclick = () => guardarPedidoNuevo(lineas, camarero, bar);
+    footer.appendChild(btnCancel);
+    footer.appendChild(btnConfirm);
+  }
+
+  openModal('modal-resumen-pedido');
+}
+
+// Crea un pedido nuevo con las líneas indicadas
+async function guardarPedidoNuevo(lineas, camarero, bar) {
+  if (guardandoPedido) return;
   guardandoPedido = true;
-  const btn = document.querySelector('[onclick="guardarPedido()"]');
-  if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+  const footer = document.getElementById('resumen-footer');
+  footer.querySelectorAll('button').forEach(b => b.disabled = true);
   try {
     const [ped] = await db('pedidos', 'POST', { bar, camarero_noche_id: camarero });
     await db('pedido_lineas', 'POST', lineas.map(l => ({ ...l, pedido_id: ped.id })));
+    closeModal('modal-resumen-pedido');
     alert(`✅ Pedido guardado para ${bar}`);
     clearPedido();
     document.getElementById('pn-camarero').value = '';
-    document.getElementById('pn-bar').value = 'Bar Piscina';
+    resetPnBar();
   } catch(e) {
     alert('❌ Error al guardar el pedido. Comprueba tu conexión e inténtalo de nuevo.');
   } finally {
     guardandoPedido = false;
-    if (btn) { btn.textContent = '✓ Guardar pedido'; btn.disabled = false; }
+    footer.querySelectorAll('button').forEach(b => b.disabled = false);
+  }
+}
+
+// Añade las líneas a un pedido pendiente ya existente.
+// Si un producto ya estaba en el pedido (sin confirmar), se suma la cantidad
+// en lugar de crear una línea duplicada.
+async function guardarPedidoExistente(lineas, pedidoId, bar) {
+  if (guardandoPedido) return;
+  guardandoPedido = true;
+  const footer = document.getElementById('resumen-footer');
+  footer.querySelectorAll('button').forEach(b => b.disabled = true);
+  try {
+    const lineasActuales = await db('pedido_lineas', 'GET', null, `?pedido_id=eq.${pedidoId}`);
+    const nuevas = [];
+    for (const l of lineas) {
+      const existente = lineasActuales.find(le => le.producto_id === l.producto_id);
+      if (existente) {
+        await db('pedido_lineas', 'PATCH', { cantidad_pedida: existente.cantidad_pedida + l.cantidad_pedida }, `?id=eq.${existente.id}`);
+      } else {
+        nuevas.push({ ...l, pedido_id: pedidoId });
+      }
+    }
+    if (nuevas.length) await db('pedido_lineas', 'POST', nuevas);
+    closeModal('modal-resumen-pedido');
+    alert(`✅ Productos añadidos al pedido pendiente de ${bar}`);
+    clearPedido();
+    document.getElementById('pn-camarero').value = '';
+    resetPnBar();
+  } catch(e) {
+    alert('❌ Error al añadir al pedido. Comprueba tu conexión e inténtalo de nuevo.');
+  } finally {
+    guardandoPedido = false;
+    footer.querySelectorAll('button').forEach(b => b.disabled = false);
   }
 }
 
@@ -605,19 +1252,19 @@ async function loadPedidosPendientes() {
       html += `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div>
-            <span class="badge badge-${ped.bar==='Bar Piscina'?'piscina':'lobby'}">${ped.bar}</span>
-            <span style="font-size:13px;color:var(--text2);margin-left:10px;">${fecha} · ${cam?cam.nombre:'—'}</span>
+            <span class="badge badge-${ped.bar==='Bar Piscina'?'piscina':'lobby'}">${esc(ped.bar)}</span>
+            <span style="font-size:13px;color:var(--text2);margin-left:10px;">${esc(fecha)} · ${cam?esc(cam.nombre):'—'}</span>
           </div>
           <span style="font-size:13px;color:var(--text2)">${lineas.length} productos</span>
         </div>`;
       const byFam = groupByFamily(lineas);
       Object.entries(byFam).forEach(([fam, ls]) => {
-        html += `<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:6px 0 4px;">${fam}</div>`;
+        html += `<div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:6px 0 4px;">${esc(fam)}</div>`;
         ls.forEach(l => {
           const prod = productos.find(p => p.id === l.producto_id);
           html += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:14px;">
-            <span>${prod?prod.nombre:'?'}</span>
-            <strong>${l.cantidad_pedida} ${prod?prod.unidad:'ud'}</strong>
+            <span>${prod?esc(prod.nombre):'?'}</span>
+            <strong>${l.cantidad_pedida} ${prod?esc(prod.unidad):'ud'}</strong>
           </div>`;
         });
       });
@@ -653,7 +1300,7 @@ async function openConfirmar(pedidoId) {
     const prod = productos.find(p => p.id === l.producto_id);
     html += `<div class="confirm-row" id="crow-${l.id}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="font-weight:600;font-size:14px;">${prod?prod.nombre:'?'}</div>
+        <div style="font-weight:600;font-size:14px;">${prod?esc(prod.nombre):'?'}</div>
         <div style="font-size:13px;color:var(--text2)">Pedido: <strong>${l.cantidad_pedida}</strong></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
@@ -734,7 +1381,7 @@ function getDateRange() {
   const now = new Date();
   let desde, hasta = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
   if (p === 'hoy') desde = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  else if (p === 'semana') { const d = new Date(now); d.setDate(d.getDate() - d.getDay()); desde = new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+  else if (p === 'semana') { const d = new Date(now); const dow = d.getDay() || 7; d.setDate(d.getDate() - dow + 1); desde = new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
   else if (p === 'mes') desde = new Date(now.getFullYear(), now.getMonth(), 1);
   else {
     const desdeVal = document.getElementById('h-desde').value;
@@ -813,8 +1460,8 @@ async function renderHistorialList(pedidos) {
         <div style="font-size:13px;color:var(--text2)">${fecha}</div>
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">
-        📋 Noche: <strong>${cam?cam.nombre:'—'}</strong>
-        ${camM ? ` &nbsp;🌅 Mañana: <strong>${camM.nombre}</strong>` : ''}
+        📋 Noche: <strong>${cam?esc(cam.nombre):'—'}</strong>
+        ${camM ? ` &nbsp;🌅 Mañana: <strong>${esc(camM.nombre)}</strong>` : ''}
       </div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Producto</th><th>Pedido</th><th>Llevado</th><th>Diferencia</th></tr></thead>
@@ -823,10 +1470,10 @@ async function renderHistorialList(pedidos) {
       const prod = productos.find(p => p.id === l.producto_id);
       const diff = l.cantidad_llevada !== null ? l.cantidad_pedida - l.cantidad_llevada : null;
       html += `<tr>
-        <td>${prod?prod.nombre:'?'}</td>
+        <td>${prod?esc(prod.nombre):'?'}</td>
         <td>${l.cantidad_pedida}</td>
         <td>${l.cantidad_llevada !== null ? l.cantidad_llevada : '—'}</td>
-        <td>${diff !== null ? (diff === 0 ? '<span style="color:var(--green)">✓</span>' : `<span style="color:var(--amber)">-${diff} <small style="color:var(--text3)">${l.motivo_diferencia||''}</small></span>`) : '—'}</td>
+        <td>${diff !== null ? (diff === 0 ? '<span style="color:var(--green)">✓</span>' : `<span style="color:var(--amber)">-${diff} <small style="color:var(--text3)">${esc(l.motivo_diferencia||'')}</small></span>`) : '—'}</td>
       </tr>`;
     });
     html += `</tbody></table></div></div>`;
@@ -836,30 +1483,38 @@ async function renderHistorialList(pedidos) {
 
 // ─── EXPORT EXCEL ──────────────────────────────────────────────
 async function exportExcel() {
-  const bar = document.getElementById('h-bar').value;
-  const { desde, hasta } = getDateRange();
-  let q = `?created_at=gte.${desde}&created_at=lte.${hasta}&order=created_at.desc`;
-  if (bar) q += `&bar=eq.${encodeURIComponent(bar)}`;
-  const pedidos = await db('pedidos', 'GET', null, q);
-  const rows = [['Fecha','Bar','Estado','Camarero Noche','Camarero Mañana','Régimen','Producto','Familia','Cantidad Pedida','Cantidad Llevada','Diferencia','Motivo']];
-  for (const ped of pedidos) {
-    const lineas = await db('pedido_lineas', 'GET', null, `?pedido_id=eq.${ped.id}`);
-    const cn = personal.find(p => p.id === ped.camarero_noche_id);
-    const cm = personal.find(p => p.id === ped.camarero_manana_id);
-    const fecha = new Date(ped.created_at).toLocaleString('es-ES');
-    lineas.forEach(l => {
-      const prod = productos.find(p => p.id === l.producto_id);
-      const fam = prod ? familias.find(f => f.id === prod.familia_id) : null;
-      const diff = l.cantidad_llevada !== null ? l.cantidad_pedida - l.cantidad_llevada : '';
-      const reg2 = fam ? regimenes.find(r => r.id === fam.regimen_id) : null;
-      rows.push([fecha, ped.bar, ped.estado, cn?cn.nombre:'', cm?cm.nombre:'', reg2?reg2.nombre:'', prod?prod.nombre:'?', fam?fam.nombre:'', l.cantidad_pedida, l.cantidad_llevada ?? '', diff, l.motivo_diferencia||'']);
-    });
+  const btn = document.querySelector('[onclick="exportExcel()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Exportando...'; }
+  try {
+    const bar = document.getElementById('h-bar').value;
+    const { desde, hasta } = getDateRange();
+    let q = `?created_at=gte.${desde}&created_at=lte.${hasta}&order=created_at.desc`;
+    if (bar) q += `&bar=eq.${encodeURIComponent(bar)}`;
+    const pedidos = await db('pedidos', 'GET', null, q);
+    const rows = [['Fecha','Bar','Estado','Camarero Noche','Camarero Mañana','Régimen','Producto','Familia','Cantidad Pedida','Cantidad Llevada','Diferencia','Motivo']];
+    for (const ped of pedidos) {
+      const lineas = await db('pedido_lineas', 'GET', null, `?pedido_id=eq.${ped.id}`);
+      const cn = personal.find(p => p.id === ped.camarero_noche_id);
+      const cm = personal.find(p => p.id === ped.camarero_manana_id);
+      const fecha = new Date(ped.created_at).toLocaleString('es-ES');
+      lineas.forEach(l => {
+        const prod = productos.find(p => p.id === l.producto_id);
+        const fam = prod ? familias.find(f => f.id === prod.familia_id) : null;
+        const diff = l.cantidad_llevada !== null ? l.cantidad_pedida - l.cantidad_llevada : '';
+        const reg2 = fam ? regimenes.find(r => r.id === fam.regimen_id) : null;
+        rows.push([fecha, ped.bar, ped.estado, cn?cn.nombre:'', cm?cm.nombre:'', reg2?reg2.nombre:'', prod?prod.nombre:'?', fam?fam.nombre:'', l.cantidad_pedida, l.cantidad_llevada ?? '', diff, l.motivo_diferencia||'']);
+      });
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = rows[0].map(() => ({wch:20}));
+    XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
+    XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
+  } catch(e) {
+    alert('❌ Error al exportar. Comprueba tu conexión e inténtalo de nuevo.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Exportar Excel'; }
   }
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = rows[0].map(() => ({wch:20}));
-  XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
-  XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ─── ADMIN ─────────────────────────────────────────────────────
@@ -870,6 +1525,7 @@ async function loadAdmin() {
   renderFamiliasAdmin();
   renderRegimenesAdmin();
   populateFamiliaSelect();
+  populateRegimenSelectsModal();
 }
 
 function renderPersonalAdmin() {
@@ -878,8 +1534,8 @@ function renderPersonalAdmin() {
   c.innerHTML = `<div class="card"><table>
     <thead><tr><th>Nombre</th><th>Cargo</th><th style="width:120px;text-align:right">Acciones</th></tr></thead>
     <tbody>${personal.map(p => `<tr>
-      <td>${p.nombre}</td>
-      <td style="color:var(--text2);font-size:13px;">${p.cargo||'Camarero'}</td>
+      <td>${esc(p.nombre)}</td>
+      <td style="color:var(--text2);font-size:13px;">${esc(p.cargo||'Camarero')}</td>
       <td style="text-align:right">
         <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditPersonal('${p.id}')">✏️</button>
         <button class="btn-danger btn-sm" onclick="deletePersonal('${p.id}')">✕</button>
@@ -908,10 +1564,10 @@ function renderProductosAdmin() {
   let html = '';
   Object.entries(byReg).forEach(([regId, regData]) => {
     if (!Object.keys(regData.familias).length) return;
-    html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);padding:10px 0 4px;margin-top:8px;">📌 ${regData.nombre}</div>`;
+    html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);padding:10px 0 4px;margin-top:8px;">📌 ${esc(regData.nombre)}</div>`;
     Object.entries(regData.familias).forEach(([fam, prods]) => {
-      html += `<div class="card" style="margin-bottom:8px;"><div class="family-header">${fam}</div><table>
-        <tbody>${prods.map(p => `<tr><td>${p.nombre}</td><td style="color:var(--text3);font-size:13px;">${p.unidad}</td><td style="text-align:right"><button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditProducto('${p.id}')">✏️</button><button class="btn-danger btn-sm" onclick="deleteProducto('${p.id}')">✕</button></td></tr>`).join('')}
+      html += `<div class="card" style="margin-bottom:8px;"><div class="family-header">${esc(fam)}</div><table>
+        <tbody>${prods.map(p => `<tr><td>${esc(p.nombre)}</td><td style="color:var(--text3);font-size:13px;">${esc(p.unidad)}</td><td style="text-align:right"><button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditProducto('${p.id}')">✏️</button><button class="btn-danger btn-sm" onclick="deleteProducto('${p.id}')">✕</button></td></tr>`).join('')}
         </tbody></table></div>`;
     });
   });
@@ -926,8 +1582,8 @@ function renderFamiliasAdmin() {
     <tbody>${familias.map(f => {
       const reg = regimenes.find(r => r.id === f.regimen_id);
       return `<tr>
-        <td>${f.nombre}</td>
-        <td style="color:var(--text2);font-size:13px;">${reg?reg.nombre:'—'}</td>
+        <td>${esc(f.nombre)}</td>
+        <td style="color:var(--text2);font-size:13px;">${reg?esc(reg.nombre):'—'}</td>
         <td style="text-align:right">
           <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditFamilia('${f.id}')">✏️</button>
           <button class="btn-danger btn-sm" onclick="deleteFamilia('${f.id}')">✕</button>
@@ -948,43 +1604,58 @@ function populateFamiliaSelect() {
     grouped[key].push(f);
   });
   s.innerHTML = Object.entries(grouped).map(([reg, fams]) =>
-    `<optgroup label="${reg}">${fams.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('')}</optgroup>`
+    `<optgroup label="${esc(reg)}">${fams.map(f => `<option value="${f.id}">${esc(f.nombre)}</option>`).join('')}</optgroup>`
   ).join('');
 }
 
 async function addPersonal() {
+  if (adminSaving) return; adminSaving = true;
   const n = document.getElementById('new-personal-nombre').value.trim();
-  if (!n) { alert('Escribe un nombre'); return; }
+  const cargo = document.getElementById('new-personal-cargo').value;
+  if (!n) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
-    await db('personal', 'POST', { nombre: n });
+    await db('personal', 'POST', { nombre: n, cargo });
     document.getElementById('new-personal-nombre').value = '';
+    document.getElementById('new-personal-cargo').value = 'Camarero';
     closeModal('modal-add-personal');
     await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
   } catch(e) { alert('❌ Error al añadir el camarero.'); }
+  finally { adminSaving = false; }
 }
 
 async function addProducto() {
+  if (adminSaving) return; adminSaving = true;
   const n = document.getElementById('new-prod-nombre').value.trim();
   const fam = document.getElementById('new-prod-familia').value;
   const uni = document.getElementById('new-prod-unidad').value.trim() || 'ud';
-  if (!n) { alert('Escribe un nombre'); return; }
+  if (!n) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
     await db('productos', 'POST', { nombre: n, familia_id: fam || null, unidad: uni });
     document.getElementById('new-prod-nombre').value = '';
     closeModal('modal-add-producto');
     await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
   } catch(e) { alert('❌ Error al añadir el producto.'); }
+  finally { adminSaving = false; }
 }
 
 async function addFamilia() {
+  if (adminSaving) return; adminSaving = true;
   const n = document.getElementById('new-familia-nombre').value.trim();
-  if (!n) { alert('Escribe un nombre'); return; }
+  const regimen_id = document.getElementById('new-familia-regimen').value || null;
+  if (!n) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
-    await db('familias', 'POST', { nombre: n, orden: familias.length + 1 });
+    await db('familias', 'POST', { nombre: n, regimen_id, orden: familias.length + 1 });
     document.getElementById('new-familia-nombre').value = '';
     closeModal('modal-add-familia');
-    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); populateRegimenSelectsModal(); renderPedidoNoche();
   } catch(e) { alert('❌ Error al añadir la familia.'); }
+  finally { adminSaving = false; }
+}
+
+function populateRegimenSelectsModal() {
+  const s = document.getElementById('new-familia-regimen');
+  if (!s) return;
+  s.innerHTML = regimenes.map(r => `<option value="${r.id}">${esc(r.nombre)}</option>`).join('');
 }
 
 async function deletePersonal(id) {
@@ -1015,7 +1686,27 @@ async function deleteFamilia(id) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  m.addEventListener('click', e => {
+    if (e.target !== m) return;
+    // El modal de resumen de pedido requiere confirmación para no perder el trabajo
+    if (m.id === 'modal-resumen-pedido') {
+      if (confirm('¿Cerrar el resumen sin guardar el pedido?')) m.classList.remove('open');
+    } else {
+      m.classList.remove('open');
+    }
+  });
+});
+
+// Tecla Enter en inputs de modales dispara el botón primario del modal
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const openModal = document.querySelector('.modal-overlay.open');
+  if (!openModal) return;
+  // Solo si el foco está en un input de texto o select (no en textarea ni botones)
+  const tag = document.activeElement?.tagName;
+  if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
+  const btn = openModal.querySelector('.modal-footer .btn-primary');
+  if (btn && !btn.disabled) btn.click();
 });
 
 
@@ -1038,10 +1729,10 @@ async function renderSinStockAlerts(prodSinStock, container) {
   pendientes.forEach(([prodId, info]) => {
     html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
       <div>
-        <div style="font-weight:600;font-size:14px;">${info.nombre}</div>
+        <div style="font-weight:600;font-size:14px;">${esc(info.nombre)}</div>
         <div style="font-size:12px;color:var(--text3);">${info.total} ud sin entregar</div>
       </div>
-      <button class="btn-success btn-sm" onclick="openResolverAlerta('${prodId}','${info.nombre}')">✓ Resolver</button>
+      <button class="btn-success btn-sm" onclick="openResolverAlerta('${prodId}','${esc(info.nombre)}')">✓ Resolver</button>
     </div>`;
   });
   html += '</div>';
@@ -1054,7 +1745,7 @@ function openResolverAlerta(prodId, nombre) {
   resolverProdId = prodId;
   document.getElementById('resolver-nombre').textContent = nombre;
   const s = document.getElementById('resolver-camarero');
-  s.innerHTML = '<option value="">— Selecciona —</option>' + personal.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+  s.innerHTML = '<option value="">— Selecciona —</option>' + personal.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
   openModal('modal-resolver-stock');
 }
 
@@ -1085,15 +1776,17 @@ function openEditPersonal(id) {
   openModal('modal-edit-personal');
 }
 async function savePersonal() {
+  if (adminSaving) return; adminSaving = true;
   const id = document.getElementById('edit-personal-id').value;
   const nombre = document.getElementById('edit-personal-nombre').value.trim();
   const cargo = document.getElementById('edit-personal-cargo').value;
-  if (!nombre) { alert('Escribe un nombre'); return; }
+  if (!nombre) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
     await db('personal', 'PATCH', { nombre, cargo }, `?id=eq.${id}`);
     closeModal('modal-edit-personal');
     await loadPersonal(); renderPersonalAdmin(); populateCamareroSelects();
   } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+  finally { adminSaving = false; }
 }
 
 // ─── EDIT PRODUCTO ──────────────────────────────────────────────
@@ -1112,21 +1805,23 @@ function openEditProducto(id) {
     grouped[key].push(f);
   });
   s.innerHTML = Object.entries(grouped).map(([reg, fams]) =>
-    `<optgroup label="${reg}">${fams.map(f => `<option value="${f.id}" ${f.id === p.familia_id ? 'selected' : ''}>${f.nombre}</option>`).join('')}</optgroup>`
+    `<optgroup label="${esc(reg)}">${fams.map(f => `<option value="${f.id}" ${f.id === p.familia_id ? 'selected' : ''}>${esc(f.nombre)}</option>`).join('')}</optgroup>`
   ).join('');
   openModal('modal-edit-producto');
 }
 async function saveProducto() {
+  if (adminSaving) return; adminSaving = true;
   const id = document.getElementById('edit-prod-id').value;
   const nombre = document.getElementById('edit-prod-nombre').value.trim();
   const familia_id = document.getElementById('edit-prod-familia').value;
   const unidad = document.getElementById('edit-prod-unidad').value.trim() || 'ud';
-  if (!nombre) { alert('Escribe un nombre'); return; }
+  if (!nombre) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
     await db('productos', 'PATCH', { nombre, familia_id, unidad }, `?id=eq.${id}`);
     closeModal('modal-edit-producto');
     await loadProductos(); renderProductosAdmin(); renderPedidoNoche();
   } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+  finally { adminSaving = false; }
 }
 
 // ─── EDIT FAMILIA ───────────────────────────────────────────────
@@ -1136,19 +1831,21 @@ function openEditFamilia(id) {
   document.getElementById('edit-familia-id').value = f.id;
   document.getElementById('edit-familia-nombre').value = f.nombre;
   const s = document.getElementById('edit-familia-regimen');
-  s.innerHTML = regimenes.map(r => `<option value="${r.id}" ${r.id === f.regimen_id ? 'selected' : ''}>${r.nombre}</option>`).join('');
+  s.innerHTML = regimenes.map(r => `<option value="${r.id}" ${r.id === f.regimen_id ? 'selected' : ''}>${esc(r.nombre)}</option>`).join('');
   openModal('modal-edit-familia');
 }
 async function saveFamilia() {
+  if (adminSaving) return; adminSaving = true;
   const id = document.getElementById('edit-familia-id').value;
   const nombre = document.getElementById('edit-familia-nombre').value.trim();
   const regimen_id = document.getElementById('edit-familia-regimen').value;
-  if (!nombre) { alert('Escribe un nombre'); return; }
+  if (!nombre) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
     await db('familias', 'PATCH', { nombre, regimen_id }, `?id=eq.${id}`);
     closeModal('modal-edit-familia');
-    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); renderPedidoNoche();
+    await loadFamilias(); renderFamiliasAdmin(); populateFamiliaSelect(); populateRegimenSelectsModal(); renderPedidoNoche();
   } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+  finally { adminSaving = false; }
 }
 
 // ─── REGIMENES ADMIN ────────────────────────────────────────────
@@ -1158,7 +1855,7 @@ function renderRegimenesAdmin() {
   c.innerHTML = `<div class="card"><table>
     <thead><tr><th>Nombre</th><th style="width:120px;text-align:right">Acciones</th></tr></thead>
     <tbody>${regimenes.map(r => `<tr>
-      <td>${r.nombre}</td>
+      <td>${esc(r.nombre)}</td>
       <td style="text-align:right">
         <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditRegimen('${r.id}')">✏️</button>
         <button class="btn-danger btn-sm" onclick="deleteRegimen('${r.id}')">✕</button>
@@ -1174,9 +1871,10 @@ function openEditRegimen(id) {
   openModal('modal-regimen');
 }
 async function saveRegimen() {
+  if (adminSaving) return; adminSaving = true;
   const id = document.getElementById('edit-regimen-id').value;
   const nombre = document.getElementById('edit-regimen-nombre').value.trim();
-  if (!nombre) { alert('Escribe un nombre'); return; }
+  if (!nombre) { adminSaving = false; alert('Escribe un nombre'); return; }
   try {
     if (id) {
       await db('regimenes', 'PATCH', { nombre }, `?id=eq.${id}`);
@@ -1186,8 +1884,9 @@ async function saveRegimen() {
     document.getElementById('edit-regimen-nombre').value = '';
     document.getElementById('edit-regimen-id').value = '';
     closeModal('modal-regimen');
-    await loadRegimenes(); renderRegimenesAdmin(); renderPedidoNoche();
+    await loadRegimenes(); renderRegimenesAdmin(); populateRegimenSelectsModal(); renderPedidoNoche();
   } catch(e) { alert('❌ Error al guardar. Inténtalo de nuevo.'); }
+  finally { adminSaving = false; }
 }
 async function deleteRegimen(id) {
   if (!confirm('¿Eliminar este régimen? Las familias asociadas quedarán sin régimen.')) return;
@@ -1217,7 +1916,348 @@ function updateBadges() {
 }
 
 // ─── START ─────────────────────────────────────────────────────
+cargarFondoCajaConfig();
 init();
+// ════════════════════════════════════════════════════════════════
+
+// ─── Checklist apertura/cierre ──────────────────────────────────
+async function loadChecklistTareas() {
+  try {
+    checklistTareas = await db('tareas_checklist', 'GET', null, '?activo=eq.true&order=bar,orden');
+  } catch(e) {
+    checklistTareas = [];
+    console.error('Error cargando checklist:', e);
+  }
+  renderChecklist();
+}
+
+function setChkBar(bar, el) {
+  chkBar = bar;
+  document.querySelectorAll('#cierre-checklist .chk-bar-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderChecklist();
+}
+
+function toggleChkSection(tipo) {
+  chkOpenSection = (chkOpenSection === tipo) ? null : tipo;
+  renderChecklist();
+}
+
+// Genera el SVG de progreso circular (anillo)
+function progressRing(done, total) {
+  const r = 14, c = 2 * Math.PI * r;
+  const pct = total > 0 ? done / total : 0;
+  const offset = c * (1 - pct);
+  const isDone = total > 0 && done === total;
+  return `<svg class="chk-progress-ring${isDone?' done':''}" viewBox="0 0 36 36">
+    <circle class="bg" cx="18" cy="18" r="${r}"></circle>
+    <circle class="fg" cx="18" cy="18" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${offset}"></circle>
+  </svg>`;
+}
+
+function renderChecklist() {
+  const c = document.getElementById('chk-list');
+  const tareas = checklistTareas.filter(t => t.bar === chkBar);
+  if (!tareas.length) {
+    c.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>No hay tareas configuradas para este bar.<br>Añádelas en Administrar → Tareas Checklist.</p></div>';
+    return;
+  }
+  const grupos = { apertura: [], cierre: [] };
+  tareas.forEach(t => { (grupos[t.tipo] || (grupos[t.tipo] = [])).push(t); });
+
+  // Si la sección "abierta por defecto" no existe para este bar, abre la primera disponible
+  if (!grupos[chkOpenSection] || !grupos[chkOpenSection].length) {
+    chkOpenSection = grupos.apertura.length ? 'apertura' : (grupos.cierre.length ? 'cierre' : null);
+  }
+
+  let html = '';
+  [['apertura','🌅','Apertura', 'icon-amber'], ['cierre','🌙','Cierre', 'icon-purple']].forEach(([tipo, emoji, label, iconClass]) => {
+    const items = grupos[tipo] || [];
+    if (!items.length) return;
+    const done = items.filter(t => !!checklistState[t.id]).length;
+    const total = items.length;
+    const isOpen = chkOpenSection === tipo;
+    const isComplete = done === total;
+    html += `<div class="chk-section" data-tipo="${tipo}">
+      <div class="chk-section-header" onclick="toggleChkSection('${tipo}')">
+        <div class="chk-section-icon ${iconClass}">${emoji}</div>
+        <div class="chk-section-info">
+          <div class="chk-section-title">${label}</div>
+          <div class="chk-section-sub${isComplete?' done':''}">${isComplete ? '¡Completado!' : `${done} de ${total} tareas`}</div>
+        </div>
+        ${progressRing(done, total)}
+        <div class="chk-arrow${isOpen?' open':''}">›</div>
+      </div>
+      <div class="chk-items${isOpen?' open':''}">`;
+    items.forEach(t => {
+      const checked = !!checklistState[t.id];
+      html += `<label class="chk-item">
+        <input type="checkbox" ${checked?'checked':''} onchange="toggleChecklistItem('${esc(t.id)}', this)">
+        <span class="chk-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="chk-item-label">${esc(t.descripcion)}</span>
+      </label>`;
+    });
+    html += `</div></div>`;
+  });
+  c.innerHTML = html;
+}
+
+function toggleChecklistItem(id, el) {
+  checklistState[id] = el.checked;
+  // Actualizar solo los contadores de progreso sin re-renderizar los items
+  // (re-renderizar destruiría el DOM y la animación CSS no se ejecutaría)
+  const tarea = checklistTareas.find(t => t.id === id);
+  if (tarea) updateChkSectionProgress(tarea.tipo);
+}
+
+function updateChkSectionProgress(tipo) {
+  const section = document.querySelector(`.chk-section[data-tipo="${tipo}"]`);
+  if (!section) return;
+  const items = checklistTareas.filter(t => t.bar === chkBar && t.tipo === tipo);
+  const done = items.filter(t => !!checklistState[t.id]).length;
+  const total = items.length;
+  const isComplete = done === total;
+  const subEl = section.querySelector('.chk-section-sub');
+  if (subEl) {
+    subEl.textContent = isComplete ? '¡Completado!' : `${done} de ${total} tareas`;
+    subEl.className = `chk-section-sub${isComplete ? ' done' : ''}`;
+  }
+  const oldRing = section.querySelector('.chk-progress-ring');
+  if (oldRing) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = progressRing(done, total);
+    oldRing.replaceWith(tmp.firstChild);
+  }
+}
+
+// ─── Calculadora de cierre de caja ──────────────────────────────
+async function cargarFondoCajaConfig() {
+  try {
+    const rows = await db('config', 'GET', null, '?clave=eq.fondo_caja');
+    if (rows && rows.length) fondoCaja = parseFloat(rows[0].valor) || 300;
+  } catch(e) { /* tabla config opcional; usar default */ }
+}
+
+function renderCaja() {
+  const c = document.getElementById('caja-container');
+  let html = '<div class="card"><div class="card-title">💶 Conteo de efectivo</div><table><tbody>';
+  DENOMINACIONES.forEach(d => {
+    const label = d >= 1 ? `${d} €` : `${(d*100).toFixed(0)} cts`;
+    const idAttr = `den-${String(d).replace('.','_')}`;
+    html += `<tr>
+      <td style="width:90px;">${label}</td>
+      <td><input type="number" min="0" step="1" inputmode="numeric" id="${idAttr}" placeholder="0" oninput="recalcCaja()" style="width:90px;"></td>
+      <td style="text-align:right;color:var(--text2);font-size:13px;" id="${idAttr}-sub">0,00 €</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>
+
+  <div class="card">
+    <div class="card-title">📊 Resumen</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Total efectivo contado</label>
+        <input type="text" id="caja-efectivo-total" value="0,00 €" disabled style="font-weight:700;font-size:16px;">
+      </div>
+      <div class="form-group">
+        <label>Fondo de caja</label>
+        <input type="text" id="caja-fondo" value="${fondoCaja.toFixed(2).replace('.',',')} €" disabled style="font-weight:700;font-size:16px;">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>TOTAL RECEPCIÓN (efectivo − fondo)</label>
+        <input type="text" id="caja-deposito" value="0,00 €" disabled style="font-weight:700;font-size:16px;color:var(--green);">
+      </div>
+      <div class="form-group">
+        <label>TOTAL VISAS (€)</label>
+        <input type="number" min="0" step="0.01" inputmode="decimal" id="caja-tarjetas" placeholder="0.00" oninput="recalcCaja()" style="font-weight:700;font-size:16px;color:var(--accent);">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>TOTAL PRODUCCIÓN NETO (efectivo + visas)</label>
+      <input type="text" id="caja-venta-total" value="0,00 €" disabled style="font-weight:700;font-size:16px;color:var(--accent);">
+    </div>
+  </div>
+
+  <div class="card" id="caja-desglose-card" style="display:none;">
+    <div class="card-title">💵 Desglose para subir a recepción</div>
+    <div id="caja-desglose"></div>
+  </div>`;
+  c.innerHTML = html;
+  recalcCaja();
+}
+
+function fmtEUR(n) {
+  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function recalcCaja() {
+  let totalCents = 0;
+  DENOMINACIONES.forEach(d => {
+    const idAttr = `den-${String(d).replace('.','_')}`;
+    const cant = parseInt(document.getElementById(idAttr).value) || 0;
+    const subCents = cant * Math.round(d * 100);
+    totalCents += subCents;
+    document.getElementById(`${idAttr}-sub`).textContent = fmtEUR(subCents / 100);
+  });
+  const totalEfectivo = totalCents / 100;
+  const visas = Math.round((parseFloat(document.getElementById('caja-tarjetas').value) || 0) * 100) / 100;
+  const ventaTotal = Math.round((totalEfectivo + visas) * 100) / 100;
+  const totalRecepcion = Math.round((totalEfectivo - fondoCaja) * 100) / 100;
+
+  document.getElementById('caja-efectivo-total').value = fmtEUR(totalEfectivo);
+  document.getElementById('caja-venta-total').value = fmtEUR(ventaTotal);
+  document.getElementById('caja-deposito').value = fmtEUR(totalRecepcion);
+
+  renderDesgloseRecepcion(totalEfectivo, totalRecepcion);
+}
+
+// Calcula, de mayor a menor denominación, qué billetes/monedas subir a
+// recepción para que en caja queden exactamente los 300€ de fondo.
+function renderDesgloseRecepcion(totalEfectivo, totalRecepcion) {
+  const card = document.getElementById('caja-desglose-card');
+  const cont = document.getElementById('caja-desglose');
+
+  if (totalRecepcion <= 0) {
+    card.style.display = 'block';
+    if (totalRecepcion === 0) {
+      cont.innerHTML = `<div class="alert alert-warn">El efectivo contado coincide exactamente con el fondo de caja (${fondoCaja.toFixed(2).replace('.',',')} €). No hay nada que subir a recepción.</div>`;
+    } else {
+      cont.innerHTML = `<div class="alert alert-warn">⚠️ El efectivo contado (${fmtEUR(totalEfectivo)}) es menor que el fondo de caja (${fondoCaja.toFixed(2).replace('.',',')} €). Falta ${fmtEUR(Math.abs(totalRecepcion))} para completar el fondo.</div>`;
+    }
+    return;
+  }
+
+  // Disponibilidad real introducida por el usuario
+  const disponible = {};
+  DENOMINACIONES.forEach(d => {
+    const idAttr = `den-${String(d).replace('.','_')}`;
+    disponible[d] = parseInt(document.getElementById(idAttr).value) || 0;
+  });
+
+  let restante = Math.round(totalRecepcion * 100); // trabajar en céntimos para evitar errores de float
+  const desglose = [];
+  for (const d of [...DENOMINACIONES].reverse()) { // de mayor a menor
+    const valorCent = Math.round(d * 100);
+    const maxPorDisponible = disponible[d];
+    const maxPorImporte = Math.floor(restante / valorCent);
+    const usar = Math.min(maxPorDisponible, maxPorImporte);
+    if (usar > 0) {
+      desglose.push({ d, cant: usar });
+      restante -= usar * valorCent;
+    }
+  }
+  desglose.reverse(); // mostrar de menor a mayor, igual que el conteo
+
+  card.style.display = 'block';
+  if (restante > 0) {
+    cont.innerHTML = `<div class="alert alert-warn">⚠️ No hay suficientes denominaciones contadas para componer exactamente ${fmtEUR(totalRecepcion)}. Faltan ${fmtEUR(restante/100)} en denominaciones disponibles.</div>` +
+      (desglose.length ? renderDesgloseTable(desglose, totalRecepcion) : '');
+    return;
+  }
+
+  cont.innerHTML = renderDesgloseTable(desglose, totalRecepcion);
+}
+
+function renderDesgloseTable(desglose, total) {
+  const filas = desglose.map(({d,cant}) => {
+    const label = d >= 1 ? `${d} €` : `${(d*100).toFixed(0)} cts`;
+    return `<tr><td>${label}</td><td style="text-align:right;font-weight:600;">${cant} ud${cant!==1?'s':''}</td><td style="text-align:right;color:var(--text2);">${fmtEUR(cant*d)}</td></tr>`;
+  }).join('');
+  const totalSum = desglose.reduce((acc,{d,cant}) => acc + d*cant, 0);
+  const totalRow = `<tr style="border-top:2px solid var(--border2);font-weight:700;"><td colspan="2">Total</td><td style="text-align:right;">${fmtEUR(total !== undefined ? total : totalSum)}</td></tr>`;
+  return `<table><tbody>${filas}${totalRow}</tbody></table>`;
+}
+
+
+// ─── Admin: Tareas Checklist ─────────────────────────────────────
+async function renderChecklistAdmin() {
+  if (!checklistTareas.length) await loadChecklistTareas();
+  const bar = document.getElementById('chk-admin-bar').value;
+  const c = document.getElementById('admin-checklist-list');
+  const tareas = checklistTareas.filter(t => t.bar === bar);
+  if (!tareas.length) { c.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>No hay tareas para este bar</p></div>'; return; }
+  const grupos = { apertura: [], cierre: [] };
+  tareas.forEach(t => { (grupos[t.tipo] || (grupos[t.tipo] = [])).push(t); });
+  let html = '';
+  [['apertura','🌅 Apertura'], ['cierre','🌙 Cierre']].forEach(([tipo, label]) => {
+    const items = grupos[tipo] || [];
+    if (!items.length) return;
+    html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);padding:10px 0 4px;">${label}</div>
+    <div class="card" style="margin-bottom:8px;"><table><tbody>${items.map(t => `<tr>
+      <td>${esc(t.descripcion)}</td>
+      <td style="text-align:right;width:120px;">
+        <button class="btn-secondary btn-sm" style="margin-right:4px;" onclick="openEditTareaChecklist('${t.id}')">✏️</button>
+        <button class="btn-danger btn-sm" onclick="deleteTareaChecklist('${t.id}')">✕</button>
+      </td>
+    </tr>`).join('')}</tbody></table></div>`;
+  });
+  c.innerHTML = html;
+}
+
+function openEditTareaChecklist(id) {
+  const t = id ? checklistTareas.find(x => x.id === id) : null;
+  const bar = document.getElementById('chk-admin-bar').value;
+  document.getElementById('tarea-chk-id').value = t ? t.id : '';
+  document.getElementById('tarea-chk-bar').value = t ? t.bar : bar;
+  document.getElementById('tarea-chk-tipo').value = t ? t.tipo : 'apertura';
+  document.getElementById('tarea-chk-desc').value = t ? t.descripcion : '';
+  document.getElementById('modal-tarea-chk-title').textContent = t ? '✏️ Editar tarea' : '➕ Añadir tarea';
+  openModal('modal-tarea-checklist');
+}
+
+async function saveTareaChecklist() {
+  if (adminSaving) return; adminSaving = true;
+  const id = document.getElementById('tarea-chk-id').value;
+  const bar = document.getElementById('tarea-chk-bar').value;
+  const tipo = document.getElementById('tarea-chk-tipo').value;
+  const descripcion = document.getElementById('tarea-chk-desc').value.trim();
+  if (!descripcion) { adminSaving = false; alert('Escribe una descripción'); return; }
+  try {
+    if (id) {
+      await db('tareas_checklist', 'PATCH', { bar, tipo, descripcion }, `?id=eq.${id}`);
+    } else {
+      const orden = checklistTareas.filter(t => t.bar === bar && t.tipo === tipo).length + 1;
+      await db('tareas_checklist', 'POST', { bar, tipo, descripcion, orden });
+    }
+    closeModal('modal-tarea-checklist');
+    await loadChecklistTareas();
+    renderChecklistAdmin();
+  } catch(e) { alert('❌ Error al guardar la tarea.'); }
+  finally { adminSaving = false; }
+}
+
+async function deleteTareaChecklist(id) {
+  if (!confirm('¿Eliminar esta tarea del checklist?')) return;
+  try {
+    await db('tareas_checklist', 'PATCH', { activo: false }, `?id=eq.${id}`);
+    await loadChecklistTareas();
+    renderChecklistAdmin();
+  } catch(e) { alert('❌ Error al eliminar.'); }
+}
+
+// ─── Admin: Fondo de Caja ────────────────────────────────────────
+async function cargarFondoCajaAdmin() {
+  await cargarFondoCajaConfig();
+  document.getElementById('admin-fondo-caja').value = fondoCaja;
+}
+
+async function guardarFondoCaja() {
+  const val = parseFloat(document.getElementById('admin-fondo-caja').value);
+  if (isNaN(val) || val < 0) { alert('Introduce un importe válido'); return; }
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/config`, {
+      method: 'POST',
+      headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({ clave: 'fondo_caja', valor: String(val) })
+    });
+    fondoCaja = val;
+    alert('✓ Fondo de caja actualizado');
+  } catch(e) { alert('❌ Error al guardar. ¿Existe la tabla "config" en Supabase?'); }
+}
+
+
 </script>
 
 <script>
@@ -1308,6 +2348,25 @@ if ('serviceWorker' in navigator) {
       <button class="btn-secondary" onclick="closeModal('modal-regimen')">Cancelar</button>
       <button class="btn-primary" onclick="saveRegimen()">Guardar</button>
     </div>
+  </div>
+</div>
+
+<div class="tabbar" id="tabbar">
+  <div class="tab-item active" id="tab-home" onclick="showSection('home',this)">
+    <div class="tab-icon">⌂</div>
+    <div class="tab-label">Inicio</div>
+  </div>
+  <div class="tab-item" id="tab-pedidos" onclick="showSection('pedidos',this)">
+    <div class="tab-icon">📋</div>
+    <div class="tab-label">Pedidos</div>
+  </div>
+  <div class="tab-item" id="tab-cierre" onclick="showSection('cierre',this)">
+    <div class="tab-icon">🔒</div>
+    <div class="tab-label">Cierre</div>
+  </div>
+  <div class="tab-item" id="tab-admin" onclick="showSection('admin',this)">
+    <div class="tab-icon">⚙️</div>
+    <div class="tab-label">Admin</div>
   </div>
 </div>
 
