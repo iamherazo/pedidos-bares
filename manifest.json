@@ -5,8 +5,8 @@
   "start_url": "/pedidos-bares/",
   "scope": "/pedidos-bares/",
   "display": "standalone",
-  "background_color": "#0f1117",
-  "theme_color": "#0f1117",
+  "background_color": "#F5F5F7",
+  "theme_color": "#F5F5F7",
   "orientation": "portrait",
   "icons": [
     {
