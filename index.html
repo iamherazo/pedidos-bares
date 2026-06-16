@@ -1753,15 +1753,33 @@ async function confirmarResolver() {
   const camId = document.getElementById('resolver-camarero').value;
   if (!camId) { alert('Selecciona quién resuelve el stock'); return; }
   try {
-    await db('alertas_stock', 'POST', {
-      producto_id: resolverProdId,
-      resuelto: true,
-      fecha_resolucion: new Date().toISOString(),
-      resuelto_por: camId
-    });
+    // Primero comprobamos si ya existe un registro para este producto (evitar duplicados)
+    const existentes = await db('alertas_stock', 'GET', null,
+      `?producto_id=eq.${resolverProdId}&resuelto=eq.false`).catch(() => []);
+
+    if (existentes.length) {
+      // Si hay una alerta pendiente, la marcamos como resuelta con PATCH
+      await db('alertas_stock', 'PATCH', {
+        resuelto: true,
+        fecha_resolucion: new Date().toISOString(),
+        resuelto_por: camId
+      }, `?producto_id=eq.${resolverProdId}&resuelto=eq.false`);
+    } else {
+      // Si no existe registro previo, creamos uno marcado ya como resuelto
+      await db('alertas_stock', 'POST', {
+        producto_id: resolverProdId,
+        resuelto: true,
+        fecha_deteccion: new Date().toISOString(),
+        fecha_resolucion: new Date().toISOString(),
+        resuelto_por: camId
+      });
+    }
     closeModal('modal-resolver-stock');
     loadHistorial();
-  } catch(e) { alert('Error: ' + e.message); }
+  } catch(e) {
+    alert('Error al resolver la alerta: ' + e.message);
+    console.error('confirmarResolver error:', e);
+  }
 }
 
 
@@ -2075,7 +2093,7 @@ function renderCaja() {
       </div>
     </div>
     <div class="form-group">
-      <label>TOTAL PRODUCCIÓN NETO (efectivo + visas)</label>
+      <label>TOTAL PRODUCCIÓN NETO (recepción + visas)</label>
       <input type="text" id="caja-venta-total" value="0,00 €" disabled style="font-weight:700;font-size:16px;color:var(--accent);">
     </div>
   </div>
@@ -2103,8 +2121,8 @@ function recalcCaja() {
   });
   const totalEfectivo = totalCents / 100;
   const visas = Math.round((parseFloat(document.getElementById('caja-tarjetas').value) || 0) * 100) / 100;
-  const ventaTotal = Math.round((totalEfectivo + visas) * 100) / 100;
   const totalRecepcion = Math.round((totalEfectivo - fondoCaja) * 100) / 100;
+  const ventaTotal = Math.round((totalRecepcion + visas) * 100) / 100;
 
   document.getElementById('caja-efectivo-total').value = fmtEUR(totalEfectivo);
   document.getElementById('caja-venta-total').value = fmtEUR(ventaTotal);
