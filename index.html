@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Pedidos">
 <link rel="apple-touch-icon" href="icon-512.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Bar Inventory — Hotel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -860,7 +860,9 @@ function showCierreTab(tab, el) {
 
 function initCierre() {
   if (!checklistTareas.length) loadChecklistTareas();
-  renderCaja();
+  // Solo renderiza la caja si el contenedor está vacío; de lo contrario
+  // se preserva lo que el usuario ya haya empezado a contar.
+  if (!document.getElementById('caja-container').innerHTML.trim()) renderCaja();
 }
 
 // ─── Inicio (Home dashboard) ────────────────────────────────────
@@ -927,7 +929,7 @@ async function loadHomeStatsData(c) {
   try {
     const now = new Date();
     const desde = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const hasta = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+    const hasta = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
     const pedidos = await db('pedidos', 'GET', null, `?created_at=gte.${desde}&created_at=lte.${hasta}`);
     const total = pedidos.length;
     const completados = pedidos.filter(p => p.estado === 'completado').length;
@@ -1067,6 +1069,7 @@ function removeFromList(id) {
 function clearPedido() {
   productos.forEach(p => { const el = document.getElementById(`qty-${p.id}`); if(el) el.value = ''; });
   document.getElementById('pn-camarero').value = '';
+  resetPnBar();
   updateBadges();
 }
 
@@ -1212,14 +1215,16 @@ async function guardarPedidoExistente(lineas, pedidoId, bar) {
   try {
     const lineasActuales = await db('pedido_lineas', 'GET', null, `?pedido_id=eq.${pedidoId}`);
     const nuevas = [];
+    const patches = [];
     for (const l of lineas) {
       const existente = lineasActuales.find(le => le.producto_id === l.producto_id);
       if (existente) {
-        await db('pedido_lineas', 'PATCH', { cantidad_pedida: existente.cantidad_pedida + l.cantidad_pedida }, `?id=eq.${existente.id}`);
+        patches.push(db('pedido_lineas', 'PATCH', { cantidad_pedida: existente.cantidad_pedida + l.cantidad_pedida }, `?id=eq.${existente.id}`));
       } else {
         nuevas.push({ ...l, pedido_id: pedidoId });
       }
     }
+    await Promise.all(patches);
     if (nuevas.length) await db('pedido_lineas', 'POST', nuevas);
     closeModal('modal-resumen-pedido');
     alert(`✅ Productos añadidos al pedido pendiente de ${bar}`);
@@ -1358,6 +1363,7 @@ async function confirmarPedido() {
       await db('pedido_lineas', 'PATCH', { cantidad_llevada: llevado, motivo_diferencia: motivo }, `?id=eq.${l.id}`);
     }
     await db('pedidos', 'PATCH', { estado: 'completado', camarero_manana_id: camId, completado_at: new Date().toISOString() }, `?id=eq.${confPedidoId}`);
+    confPedidoId = null; confLineas = [];
     closeModal('modal-confirmar-pedido');
     alert('✅ Recogida confirmada');
     loadPedidosPendientes();
@@ -1428,11 +1434,10 @@ async function renderHistorialList(pedidos) {
   const sinStockDiv = document.getElementById('h-sin-stock-alert');
   if (!pedidos.length) { c.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No hay pedidos en este periodo</p></div>'; sinStockDiv.innerHTML=''; return; }
 
-  let allLineas = [];
-  for (const ped of pedidos) {
-    const lineas = await db('pedido_lineas', 'GET', null, `?pedido_id=eq.${ped.id}`);
-    allLineas = allLineas.concat(lineas.map(l => ({ ...l, ped })));
-  }
+  // Carga todas las líneas en una sola query usando in.() en vez de N queries secuenciales
+  const ids = pedidos.map(p => p.id);
+  const todasLineas = await db('pedido_lineas', 'GET', null, `?pedido_id=in.(${ids.join(',')})&order=created_at.asc`);
+  const allLineas = todasLineas.map(l => ({ ...l, ped: pedidos.find(p => p.id === l.pedido_id) })).filter(l => l.ped);
 
   // Sin stock alert
   const sinStock = allLineas.filter(l => l.motivo_diferencia === 'sin_stock');
@@ -1454,8 +1459,8 @@ async function renderHistorialList(pedidos) {
     html += `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="badge badge-${ped.bar==='Bar Piscina'?'piscina':'lobby'}">${ped.bar}</span>
-          <span class="badge badge-${ped.estado}">${ped.estado}</span>
+          <span class="badge badge-${ped.bar==='Bar Piscina'?'piscina':'lobby'}">${esc(ped.bar)}</span>
+          <span class="badge badge-${ped.estado}">${esc(ped.estado)}</span>
         </div>
         <div style="font-size:13px;color:var(--text2)">${fecha}</div>
       </div>
@@ -1491,9 +1496,12 @@ async function exportExcel() {
     let q = `?created_at=gte.${desde}&created_at=lte.${hasta}&order=created_at.desc`;
     if (bar) q += `&bar=eq.${encodeURIComponent(bar)}`;
     const pedidos = await db('pedidos', 'GET', null, q);
+    if (!pedidos.length) { alert('No hay pedidos en el periodo seleccionado.'); return; }
+    const pedIds = pedidos.map(p => p.id);
+    const todasLineas = await db('pedido_lineas', 'GET', null, `?pedido_id=in.(${pedIds.join(',')})`);
     const rows = [['Fecha','Bar','Estado','Camarero Noche','Camarero Mañana','Régimen','Producto','Familia','Cantidad Pedida','Cantidad Llevada','Diferencia','Motivo']];
-    for (const ped of pedidos) {
-      const lineas = await db('pedido_lineas', 'GET', null, `?pedido_id=eq.${ped.id}`);
+    pedidos.forEach(ped => {
+      const lineas = todasLineas.filter(l => l.pedido_id === ped.id);
       const cn = personal.find(p => p.id === ped.camarero_noche_id);
       const cm = personal.find(p => p.id === ped.camarero_manana_id);
       const fecha = new Date(ped.created_at).toLocaleString('es-ES');
@@ -1504,7 +1512,7 @@ async function exportExcel() {
         const reg2 = fam ? regimenes.find(r => r.id === fam.regimen_id) : null;
         rows.push([fecha, ped.bar, ped.estado, cn?cn.nombre:'', cm?cm.nombre:'', reg2?reg2.nombre:'', prod?prod.nombre:'?', fam?fam.nombre:'', l.cantidad_pedida, l.cantidad_llevada ?? '', diff, l.motivo_diferencia||'']);
       });
-    }
+    });
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = rows[0].map(() => ({wch:20}));
