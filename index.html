@@ -1436,19 +1436,11 @@ async function renderHistorialList(pedidos) {
 
   // Carga todas las líneas en una sola query usando in.() en vez de N queries secuenciales
   const ids = pedidos.map(p => p.id);
-  const todasLineas = await db('pedido_lineas', 'GET', null, `?pedido_id=in.(${ids.join(',')})&order=created_at.asc`);
+  const todasLineas = await db('pedido_lineas', 'GET', null, `?pedido_id=in.("${ids.join('","')}")&order=created_at.asc`);
   const allLineas = todasLineas.map(l => ({ ...l, ped: pedidos.find(p => p.id === l.pedido_id) })).filter(l => l.ped);
 
-  // Sin stock alert
-  const sinStock = allLineas.filter(l => l.motivo_diferencia === 'sin_stock');
-  const prodSinStock = {};
-  sinStock.forEach(l => {
-    const prod = productos.find(p => p.id === l.producto_id);
-    if (!prod) return;
-    if (!prodSinStock[prod.id]) prodSinStock[prod.id] = { nombre: prod.nombre, total: 0 };
-    prodSinStock[prod.id].total += (l.cantidad_pedida - (l.cantidad_llevada || 0));
-  });
-  await renderSinStockAlerts(prodSinStock, sinStockDiv);
+  // Sin stock alert (consulta independiente del filtro de periodo)
+  await renderSinStockAlerts(sinStockDiv);
 
   let html = '';
   pedidos.forEach(ped => {
@@ -1498,7 +1490,7 @@ async function exportExcel() {
     const pedidos = await db('pedidos', 'GET', null, q);
     if (!pedidos.length) { alert('No hay pedidos en el periodo seleccionado.'); return; }
     const pedIds = pedidos.map(p => p.id);
-    const todasLineas = await db('pedido_lineas', 'GET', null, `?pedido_id=in.(${pedIds.join(',')})`);
+    const todasLineas = await db('pedido_lineas', 'GET', null, `?pedido_id=in.("${pedIds.join('","')}")`);
     const rows = [['Fecha','Bar','Estado','Camarero Noche','Camarero Mañana','Régimen','Producto','Familia','Cantidad Pedida','Cantidad Llevada','Diferencia','Motivo']];
     pedidos.forEach(ped => {
       const lineas = todasLineas.filter(l => l.pedido_id === ped.id);
@@ -1719,32 +1711,55 @@ document.addEventListener('keydown', e => {
 
 
 // ─── ALERTAS STOCK ─────────────────────────────────────────────
-async function renderSinStockAlerts(prodSinStock, container) {
-  if (!Object.keys(prodSinStock).length) { container.innerHTML = ''; return; }
+async function renderSinStockAlerts(container) {
+  try {
+    // Consulta TODAS las líneas sin stock (sin filtro de periodo ni pedido)
+    const lineasSinStock = await db('pedido_lineas', 'GET', null,
+      '?motivo_diferencia=eq.sin_stock&select=producto_id,cantidad_pedida,cantidad_llevada');
 
-  // Cargar alertas ya resueltas para estos productos
-  const ids = Object.keys(prodSinStock);
-  const alertasResueltas = await db('alertas_stock', 'GET', null, `?resuelto=eq.true&producto_id=in.(${ids.join(',')})`).catch(() => []);
-  const resueltosIds = new Set(alertasResueltas.map(a => a.producto_id));
+    if (!lineasSinStock.length) { container.innerHTML = ''; return; }
 
-  // Filtrar solo los que NO están resueltos
-  const pendientes = Object.entries(prodSinStock).filter(([id]) => !resueltosIds.has(id));
+    // Agrupar por producto
+    const prodMap = {};
+    lineasSinStock.forEach(l => {
+      const prod = productos.find(p => p.id === l.producto_id);
+      if (!prod) return;
+      if (!prodMap[prod.id]) prodMap[prod.id] = { nombre: prod.nombre, total: 0 };
+      prodMap[prod.id].total += (l.cantidad_pedida - (l.cantidad_llevada || 0));
+    });
 
-  if (!pendientes.length) { container.innerHTML = '<div class="alert alert-success">✅ Todos los productos sin stock han sido resueltos</div>'; return; }
+    if (!Object.keys(prodMap).length) { container.innerHTML = ''; return; }
 
-  let html = '<div class="card" style="border-color:rgba(245,158,11,0.4);margin-bottom:16px;">';
-  html += '<div class="card-title" style="color:var(--amber);">⚠️ Productos con falta de stock</div>';
-  pendientes.forEach(([prodId, info]) => {
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-      <div>
-        <div style="font-weight:600;font-size:14px;">${esc(info.nombre)}</div>
-        <div style="font-size:12px;color:var(--text3);">${info.total} ud sin entregar</div>
-      </div>
-      <button class="btn-success btn-sm" onclick="openResolverAlerta('${prodId}','${esc(info.nombre)}')">✓ Resolver</button>
-    </div>`;
-  });
-  html += '</div>';
-  container.innerHTML = html;
+    // Cargar alertas ya resueltas (comillas en UUIDs para PostgREST)
+    const ids = Object.keys(prodMap);
+    const alertasResueltas = await db('alertas_stock', 'GET', null,
+      `?resuelto=eq.true&producto_id=in.("${ids.join('","')}")`).catch(() => []);
+    const resueltosIds = new Set(alertasResueltas.map(a => a.producto_id));
+
+    const pendientes = Object.entries(prodMap).filter(([id]) => !resueltosIds.has(id));
+
+    if (!pendientes.length) {
+      container.innerHTML = '<div class="alert alert-success">✅ Todos los productos sin stock han sido resueltos</div>';
+      return;
+    }
+
+    let html = '<div class="card" style="border-color:rgba(245,158,11,0.4);margin-bottom:16px;">';
+    html += '<div class="card-title" style="color:var(--amber);">⚠️ Productos con falta de stock</div>';
+    pendientes.forEach(([prodId, info]) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-weight:600;font-size:14px;">${esc(info.nombre)}</div>
+          <div style="font-size:12px;color:var(--text3);">${info.total} ud sin entregar</div>
+        </div>
+        <button class="btn-success btn-sm" onclick="openResolverAlerta('${prodId}','${esc(info.nombre)}')">✓ Resolver</button>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = `<div class="alert alert-warn">⚠️ Error al cargar alertas: ${esc(e.message)}</div>`;
+    console.error('renderSinStockAlerts error:', e);
+  }
 }
 
 let resolverProdId = null;
